@@ -1,5 +1,5 @@
 import { useAuth } from "../AuthContext"
-import { canAccess, ROLES } from "../data/users"
+import { canAccess, ROLE_LABELS, ROLE_COLORS } from "../data/users"
 
 const ALL_NAV = [
   { id: "dashboard",  label: "Dashboard",               icon: "⊞",  section: null },
@@ -8,19 +8,8 @@ const ALL_NAV = [
   { id: "patients",   label: "Patients",                icon: "🩺", section: null },
   { id: "medication", label: "Medication",              icon: "💊", section: null },
   { id: "supplies",   label: "Supplies & Requisitions", icon: "📦", section: null },
+  { id: "accounts",   label: "Account Management",      icon: "🔑", section: null },
 ]
-
-const ROLE_LABELS = {
-  [ROLES.PERSONNEL_OFFICER]: "Personnel Officer",
-  [ROLES.CHARGE_NURSE]:      "Charge Nurse",
-  [ROLES.MEDICAL_DIRECTOR]:  "Medical Director",
-}
-
-const ROLE_COLORS = {
-  [ROLES.PERSONNEL_OFFICER]: "var(--blue-400)",
-  [ROLES.CHARGE_NURSE]:      "var(--teal-500)",
-  [ROLES.MEDICAL_DIRECTOR]:  "var(--purple-500)",
-}
 
 function Sidebar({ activePage, setActivePage }) {
   const { currentUser, logout } = useAuth()
@@ -73,7 +62,11 @@ function Sidebar({ activePage, setActivePage }) {
             {currentUser.avatar}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 500, color: "rgba(255,255,255,0.85)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <div style={{
+              fontSize: 12.5, fontWeight: 500,
+              color: "rgba(255,255,255,0.85)",
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            }}>
               {currentUser.full_name}
             </div>
             <div style={{ fontSize: 10.5, color: ROLE_COLORS[currentUser.role], marginTop: 1 }}>

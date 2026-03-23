@@ -1,31 +1,42 @@
 import { useState, useEffect } from "react"
-
-const API = "http://localhost:5000/api"
+import { supabase } from "../data/supabaseClient"
 
 function Medication() {
-  const [pharmaSupplies, setPharma]   = useState([])
-  const [medications, setMeds]        = useState([])
-  const [patients, setPatients]       = useState([])
-  const [loading, setLoading]         = useState(true)
-  const [tab, setTab]                 = useState("drugs")
-  const [search, setSearch]           = useState("")
+  const [pharmaSupplies, setPharma] = useState([])
+  const [medications, setMeds]      = useState([])
+  const [patients, setPatients]     = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [error, setError]           = useState(null)
+  const [tab, setTab]               = useState("drugs")
+  const [search, setSearch]         = useState("")
 
   useEffect(() => {
-    Promise.all([
-      fetch(`${API}/pharmaceutical-supplies`).then(r => r.json()),
-      fetch(`${API}/patient-medications`).then(r => r.json()),
-      fetch(`${API}/patients`).then(r => r.json()),
-    ])
-      .then(([pharmaData, medsData, patientsData]) => {
+    async function loadData() {
+      try {
+        const [
+          { data: pharmaData, error: e1 },
+          { data: medsData,   error: e2 },
+          { data: patientsData, error: e3 },
+        ] = await Promise.all([
+          supabase.from("pharmaceutical_supply").select("*"),
+          supabase.from("patient_medication").select("*"),
+          supabase.from("patient").select("*"),
+        ])
+
+        const err = e1 || e2 || e3
+        if (err) throw err
+
         setPharma(pharmaData)
         setMeds(medsData)
         setPatients(patientsData)
-        setLoading(false)
-      })
-      .catch(err => {
+      } catch (err) {
         console.error("Failed to load medication data:", err)
+        setError(err.message)
+      } finally {
         setLoading(false)
-      })
+      }
+    }
+    loadData()
   }, [])
 
   if (loading) {
@@ -34,6 +45,17 @@ function Medication() {
         <div className="empty">
           <div className="empty__icon">⏳</div>
           <div className="empty__text">Loading medication data from database…</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="page">
+        <div className="alert alert--red">
+          <span>⚠️</span>
+          <span><strong>Database error: </strong>{error}</span>
         </div>
       </div>
     )
@@ -58,8 +80,8 @@ function Medication() {
   })
 
   const stockBadge = (drug) => {
-    if (drug.qty_in_stock <= drug.reorder_level)         return "badge--red"
-    if (drug.qty_in_stock <= drug.reorder_level * 1.5)   return "badge--amber"
+    if (drug.qty_in_stock <= drug.reorder_level)       return "badge--red"
+    if (drug.qty_in_stock <= drug.reorder_level * 1.5) return "badge--amber"
     return "badge--green"
   }
 

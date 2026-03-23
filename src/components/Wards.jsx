@@ -1,34 +1,46 @@
 import { useState, useEffect } from "react"
-
-const API = "http://localhost:5000/api"
+import { supabase } from "../data/supabaseClient"
 
 function Wards() {
-  const [wards, setWards]         = useState([])
-  const [staff, setStaff]         = useState([])
-  const [inPatients, setInPats]   = useState([])
-  const [staffRota, setRota]      = useState([])
-  const [loading, setLoading]     = useState(true)
-  const [selected, setSelected]   = useState(null)
-  const [tab, setTab]             = useState("staff")
+  const [wards, setWards]       = useState([])
+  const [staff, setStaff]       = useState([])
+  const [inPatients, setInPats] = useState([])
+  const [staffRota, setRota]    = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState(null)
+  const [selected, setSelected] = useState(null)
+  const [tab, setTab]           = useState("staff")
 
   useEffect(() => {
-    Promise.all([
-      fetch(`${API}/wards`).then(r => r.json()),
-      fetch(`${API}/staff`).then(r => r.json()),
-      fetch(`${API}/inpatients`).then(r => r.json()),
-      fetch(`${API}/staff-rota`).then(r => r.json()),
-    ])
-      .then(([wardsData, staffData, ipData, rotaData]) => {
+    async function loadData() {
+      try {
+        const [
+          { data: wardsData, error: e1 },
+          { data: staffData, error: e2 },
+          { data: ipData,    error: e3 },
+          { data: rotaData,  error: e4 },
+        ] = await Promise.all([
+          supabase.from("ward").select("*"),
+          supabase.from("staff").select("*"),
+          supabase.from("inpatient").select("*"),
+          supabase.from("staff_rota").select("*"),
+        ])
+
+        const err = e1 || e2 || e3 || e4
+        if (err) throw err
+
         setWards(wardsData)
         setStaff(staffData)
         setInPats(ipData)
         setRota(rotaData)
-        setLoading(false)
-      })
-      .catch(err => {
+      } catch (err) {
         console.error("Failed to load ward data:", err)
+        setError(err.message)
+      } finally {
         setLoading(false)
-      })
+      }
+    }
+    loadData()
   }, [])
 
   if (loading) {
@@ -37,6 +49,17 @@ function Wards() {
         <div className="empty">
           <div className="empty__icon">⏳</div>
           <div className="empty__text">Loading ward data from database…</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="page">
+        <div className="alert alert--red">
+          <span>⚠️</span>
+          <span><strong>Database error: </strong>{error}</span>
         </div>
       </div>
     )

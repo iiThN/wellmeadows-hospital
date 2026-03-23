@@ -1,51 +1,74 @@
 import { useState, useEffect } from "react"
-
-const API = "http://localhost:5000/api"
+import { supabase } from "../data/supabaseClient"
 
 function Staff({ accessLevel = "full" }) {
-  const [staff, setStaff]                   = useState([])
-  const [wards, setWards]                   = useState([])
-  const [quals, setQuals]                   = useState([])
-  const [exp, setExp]                       = useState([])
-  const [rota, setRota]                     = useState([])
-  const [loading, setLoading]               = useState(true)
-  const [search, setSearch]                 = useState("")
-  const [filterPos, setPos]                 = useState("all")
-  const [selected, setSelect]               = useState(null)
-  const [tab, setTab]                       = useState("details")
-  const isViewOnly                           = accessLevel === "view"
+  const [staff, setStaff]     = useState([])
+  const [wards, setWards]     = useState([])
+  const [quals, setQuals]     = useState([])
+  const [exp, setExp]         = useState([])
+  const [rota, setRota]       = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState(null)
+  const [search, setSearch]   = useState("")
+  const [filterPos, setPos]   = useState("all")
+  const [selected, setSelect] = useState(null)
+  const [tab, setTab]         = useState("details")
+  const isViewOnly             = accessLevel === "view"
 
-  // Fetch all staff and wards on mount
+  // Load staff + wards on mount
   useEffect(() => {
-    Promise.all([
-      fetch(`${API}/staff`).then(r => r.json()),
-      fetch(`${API}/wards`).then(r => r.json()),
-    ])
-      .then(([staffData, wardsData]) => {
+    async function loadData() {
+      try {
+        const [
+          { data: staffData, error: e1 },
+          { data: wardsData, error: e2 },
+        ] = await Promise.all([
+          supabase.from("staff").select("*"),
+          supabase.from("ward").select("*"),
+        ])
+
+        const err = e1 || e2
+        if (err) throw err
+
         setStaff(staffData)
         setWards(wardsData)
-        setLoading(false)
-      })
-      .catch(err => {
+      } catch (err) {
         console.error("Failed to load staff data:", err)
+        setError(err.message)
+      } finally {
         setLoading(false)
-      })
+      }
+    }
+    loadData()
   }, [])
 
-  // Fetch qualifications, experience, rota when a staff member is selected
+  // Load qualifications, experience, rota when a staff member is selected
   useEffect(() => {
     if (!selected) return
-    Promise.all([
-      fetch(`${API}/staff/${selected}/qualifications`).then(r => r.json()),
-      fetch(`${API}/staff/${selected}/experience`).then(r => r.json()),
-      fetch(`${API}/staff/${selected}/rota`).then(r => r.json()),
-    ])
-      .then(([qualsData, expData, rotaData]) => {
+
+    async function loadDetails() {
+      try {
+        const [
+          { data: qualsData, error: e1 },
+          { data: expData,   error: e2 },
+          { data: rotaData,  error: e3 },
+        ] = await Promise.all([
+          supabase.from("staff_qualification").select("*").eq("staff_no", selected),
+          supabase.from("staff_experience").select("*").eq("staff_no", selected),
+          supabase.from("staff_rota").select("*").eq("staff_no", selected),
+        ])
+
+        const err = e1 || e2 || e3
+        if (err) throw err
+
         setQuals(qualsData)
         setExp(expData)
         setRota(rotaData)
-      })
-      .catch(err => console.error("Failed to load staff details:", err))
+      } catch (err) {
+        console.error("Failed to load staff details:", err)
+      }
+    }
+    loadDetails()
   }, [selected])
 
   const positions = [...new Set(staff.map(s => s.position))]
@@ -71,6 +94,17 @@ function Staff({ accessLevel = "full" }) {
     )
   }
 
+  if (error) {
+    return (
+      <div className="page">
+        <div className="alert alert--red">
+          <span>⚠️</span>
+          <span><strong>Database error: </strong>{error}</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="page">
       <div className="page__head">
@@ -91,7 +125,6 @@ function Staff({ accessLevel = "full" }) {
 
       <div className="grid-2">
 
-        {/* Left — staff list */}
         <div className="card">
           <div className="card__header">
             <div className="card__title">Staff Directory</div>
@@ -104,11 +137,7 @@ function Staff({ accessLevel = "full" }) {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
-              <select
-                className="input-select"
-                value={filterPos}
-                onChange={e => setPos(e.target.value)}
-              >
+              <select className="input-select" value={filterPos} onChange={e => setPos(e.target.value)}>
                 <option value="all">All positions</option>
                 {positions.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
@@ -149,7 +178,6 @@ function Staff({ accessLevel = "full" }) {
           </div>
         </div>
 
-        {/* Right — detail panel */}
         {s ? (
           <div className="card">
             <div className="card__header">

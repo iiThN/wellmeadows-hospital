@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react"
-
-const API = "http://localhost:5000/api"
+import { supabase } from "../data/supabaseClient"
 
 function Dashboard({ setActivePage }) {
   const [wards, setWards]                   = useState([])
@@ -10,29 +9,44 @@ function Dashboard({ setActivePage }) {
   const [pharmaSupplies, setPharmaSupplies] = useState([])
   const [requisitions, setRequisitions]     = useState([])
   const [loading, setLoading]               = useState(true)
+  const [error, setError]                   = useState(null)
 
   useEffect(() => {
-    Promise.all([
-      fetch(`${API}/wards`).then(r => r.json()),
-      fetch(`${API}/staff`).then(r => r.json()),
-      fetch(`${API}/patients`).then(r => r.json()),
-      fetch(`${API}/inpatients`).then(r => r.json()),
-      fetch(`${API}/pharmaceutical-supplies`).then(r => r.json()),
-      fetch(`${API}/requisitions`).then(r => r.json()),
-    ])
-      .then(([wardsData, staffData, patientsData, inPatientsData, pharmaData, reqData]) => {
+    async function loadData() {
+      try {
+        const [
+          { data: wardsData,    error: e1 },
+          { data: staffData,    error: e2 },
+          { data: patientsData, error: e3 },
+          { data: inPatsData,   error: e4 },
+          { data: pharmaData,   error: e5 },
+          { data: reqData,      error: e6 },
+        ] = await Promise.all([
+          supabase.from("ward").select("*"),
+          supabase.from("staff").select("*"),
+          supabase.from("patient").select("*"),
+          supabase.from("inpatient").select("*"),
+          supabase.from("pharmaceutical_supply").select("*"),
+          supabase.from("requisition").select("*"),
+        ])
+
+        const err = e1 || e2 || e3 || e4 || e5 || e6
+        if (err) throw err
+
         setWards(wardsData)
         setStaff(staffData)
         setPatients(patientsData)
-        setInPatients(inPatientsData)
+        setInPatients(inPatsData)
         setPharmaSupplies(pharmaData)
         setRequisitions(reqData)
-        setLoading(false)
-      })
-      .catch(err => {
+      } catch (err) {
         console.error("Failed to load dashboard data:", err)
+        setError(err.message)
+      } finally {
         setLoading(false)
-      })
+      }
+    }
+    loadData()
   }, [])
 
   if (loading) {
@@ -41,6 +55,17 @@ function Dashboard({ setActivePage }) {
         <div className="empty">
           <div className="empty__icon">⏳</div>
           <div className="empty__text">Loading dashboard data from database…</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="page">
+        <div className="alert alert--red">
+          <span>⚠️</span>
+          <span><strong>Database error: </strong>{error}</span>
         </div>
       </div>
     )

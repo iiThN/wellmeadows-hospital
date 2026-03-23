@@ -1,31 +1,44 @@
 import { useState, useEffect } from "react"
-
-const API = "http://localhost:5000/api"
+import { supabase } from "../data/supabaseClient"
 
 function Supplies() {
-  const [surgicalSupplies, setSurgical]     = useState([])
-  const [pharmaSupplies, setPharma]         = useState([])
-  const [suppliers, setSuppliers]           = useState([])
-  const [requisitions, setRequisitions]     = useState([])
-  const [requisitionItems, setReqItems]     = useState([])
-  const [staff, setStaff]                   = useState([])
-  const [wards, setWards]                   = useState([])
-  const [loading, setLoading]               = useState(true)
-  const [tab, setTab]                       = useState("surgical")
-  const [search, setSearch]                 = useState("")
-  const [selectedReq, setSelReq]            = useState(null)
+  const [surgicalSupplies, setSurgical] = useState([])
+  const [pharmaSupplies, setPharma]     = useState([])
+  const [suppliers, setSuppliers]       = useState([])
+  const [requisitions, setRequisitions] = useState([])
+  const [requisitionItems, setReqItems] = useState([])
+  const [staff, setStaff]               = useState([])
+  const [wards, setWards]               = useState([])
+  const [loading, setLoading]           = useState(true)
+  const [error, setError]               = useState(null)
+  const [tab, setTab]                   = useState("surgical")
+  const [search, setSearch]             = useState("")
+  const [selectedReq, setSelReq]        = useState(null)
 
   useEffect(() => {
-    Promise.all([
-      fetch(`${API}/surgical-supplies`).then(r => r.json()),
-      fetch(`${API}/pharmaceutical-supplies`).then(r => r.json()),
-      fetch(`${API}/suppliers`).then(r => r.json()),
-      fetch(`${API}/requisitions`).then(r => r.json()),
-      fetch(`${API}/requisition-items`).then(r => r.json()),
-      fetch(`${API}/staff`).then(r => r.json()),
-      fetch(`${API}/wards`).then(r => r.json()),
-    ])
-      .then(([surgData, pharmaData, suppData, reqData, reqItemsData, staffData, wardsData]) => {
+    async function loadData() {
+      try {
+        const [
+          { data: surgData,     error: e1 },
+          { data: pharmaData,   error: e2 },
+          { data: suppData,     error: e3 },
+          { data: reqData,      error: e4 },
+          { data: reqItemsData, error: e5 },
+          { data: staffData,    error: e6 },
+          { data: wardsData,    error: e7 },
+        ] = await Promise.all([
+          supabase.from("surgical_supply").select("*"),
+          supabase.from("pharmaceutical_supply").select("*"),
+          supabase.from("supplier").select("*"),
+          supabase.from("requisition").select("*"),
+          supabase.from("requisition_item").select("*"),
+          supabase.from("staff").select("*"),
+          supabase.from("ward").select("*"),
+        ])
+
+        const err = e1||e2||e3||e4||e5||e6||e7
+        if (err) throw err
+
         setSurgical(surgData)
         setPharma(pharmaData)
         setSuppliers(suppData)
@@ -33,12 +46,14 @@ function Supplies() {
         setReqItems(reqItemsData)
         setStaff(staffData)
         setWards(wardsData)
-        setLoading(false)
-      })
-      .catch(err => {
+      } catch (err) {
         console.error("Failed to load supplies data:", err)
+        setError(err.message)
+      } finally {
         setLoading(false)
-      })
+      }
+    }
+    loadData()
   }, [])
 
   if (loading) {
@@ -47,6 +62,17 @@ function Supplies() {
         <div className="empty">
           <div className="empty__icon">⏳</div>
           <div className="empty__text">Loading supplies data from database…</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="page">
+        <div className="alert alert--red">
+          <span>⚠️</span>
+          <span><strong>Database error: </strong>{error}</span>
         </div>
       </div>
     )
