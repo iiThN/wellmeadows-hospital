@@ -1,17 +1,57 @@
-import { useState } from "react"
-import { staff, wards, staffQualifications, staffExperience, staffRota } from "../data/mockData"
+import { useState, useEffect } from "react"
+
+const API = "http://localhost:5000/api"
 
 function Staff({ accessLevel = "full" }) {
-  const [search, setSearch]   = useState("")
-  const [filterPos, setPos]   = useState("all")
-  const [selected, setSelect] = useState(null)
-  const [tab, setTab]         = useState("details")
-  const isViewOnly             = accessLevel === "view"
+  const [staff, setStaff]                   = useState([])
+  const [wards, setWards]                   = useState([])
+  const [quals, setQuals]                   = useState([])
+  const [exp, setExp]                       = useState([])
+  const [rota, setRota]                     = useState([])
+  const [loading, setLoading]               = useState(true)
+  const [search, setSearch]                 = useState("")
+  const [filterPos, setPos]                 = useState("all")
+  const [selected, setSelect]               = useState(null)
+  const [tab, setTab]                       = useState("details")
+  const isViewOnly                           = accessLevel === "view"
+
+  // Fetch all staff and wards on mount
+  useEffect(() => {
+    Promise.all([
+      fetch(`${API}/staff`).then(r => r.json()),
+      fetch(`${API}/wards`).then(r => r.json()),
+    ])
+      .then(([staffData, wardsData]) => {
+        setStaff(staffData)
+        setWards(wardsData)
+        setLoading(false)
+      })
+      .catch(err => {
+        console.error("Failed to load staff data:", err)
+        setLoading(false)
+      })
+  }, [])
+
+  // Fetch qualifications, experience, rota when a staff member is selected
+  useEffect(() => {
+    if (!selected) return
+    Promise.all([
+      fetch(`${API}/staff/${selected}/qualifications`).then(r => r.json()),
+      fetch(`${API}/staff/${selected}/experience`).then(r => r.json()),
+      fetch(`${API}/staff/${selected}/rota`).then(r => r.json()),
+    ])
+      .then(([qualsData, expData, rotaData]) => {
+        setQuals(qualsData)
+        setExp(expData)
+        setRota(rotaData)
+      })
+      .catch(err => console.error("Failed to load staff details:", err))
+  }, [selected])
 
   const positions = [...new Set(staff.map(s => s.position))]
 
   const filtered = staff.filter(s => {
-    const name = `${s.first_name} ${s.last_name}`.toLowerCase()
+    const name        = `${s.first_name} ${s.last_name}`.toLowerCase()
     const matchSearch = name.includes(search.toLowerCase()) || s.staff_no.toLowerCase().includes(search.toLowerCase())
     const matchPos    = filterPos === "all" || s.position === filterPos
     return matchSearch && matchPos
@@ -19,16 +59,26 @@ function Staff({ accessLevel = "full" }) {
 
   const s    = staff.find(st => st.staff_no === selected)
   const ward = s ? wards.find(w => w.ward_no === s.ward_no) : null
-  const quals = staffQualifications.filter(q => q.staff_no === selected)
-  const exp   = staffExperience.filter(e => e.staff_no === selected)
-  const rota  = staffRota.filter(r => r.staff_no === selected)
+
+  if (loading) {
+    return (
+      <div className="page">
+        <div className="empty">
+          <div className="empty__icon">⏳</div>
+          <div className="empty__text">Loading staff data from database…</div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="page">
       <div className="page__head">
         <div>
           <div className="page__title">Staff Management</div>
-          <div className="page__subtitle">{staff.length} staff members · {staff.filter(s => s.contract_type === "Permanent").length} permanent</div>
+          <div className="page__subtitle">
+            {staff.length} staff members · {staff.filter(s => s.contract_type === "Permanent").length} permanent
+          </div>
         </div>
       </div>
 
@@ -137,7 +187,7 @@ function Staff({ accessLevel = "full" }) {
                   <div className="span-2"><div className="detail__label">Address</div><div className="detail__value">{s.address}</div></div>
                   <div><div className="detail__label">Telephone</div><div className="detail__value">{s.tel_no}</div></div>
                   <div><div className="detail__label">Ward</div><div className="detail__value">{ward ? `Ward ${ward.ward_no} — ${ward.ward_name}` : "Not assigned"}</div></div>
-                  <div><div className="detail__label">Current salary</div><div className="detail__value">{isViewOnly ? <span style={{ color: "var(--gray-400)" }}>Hidden</span> : `£${s.current_salary.toLocaleString()}`}</div></div>
+                  <div><div className="detail__label">Current salary</div><div className="detail__value">{isViewOnly ? <span style={{ color: "var(--gray-400)" }}>Hidden</span> : `£${Number(s.current_salary).toLocaleString()}`}</div></div>
                   <div><div className="detail__label">Salary scale</div><div className="detail__value">{isViewOnly ? <span style={{ color: "var(--gray-400)" }}>Hidden</span> : s.salary_scale}</div></div>
                   <div><div className="detail__label">Hours / week</div><div className="detail__value">{s.hrs_per_week}</div></div>
                   <div><div className="detail__label">Payment type</div><div className="detail__value">{s.payment_type}</div></div>

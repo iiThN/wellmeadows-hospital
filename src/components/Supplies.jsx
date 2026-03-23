@@ -1,10 +1,56 @@
-import { useState } from "react"
-import { surgicalSupplies, pharmaceuticalSupplies, suppliers, requisitions, requisitionItems, staff, wards } from "../data/mockData"
+import { useState, useEffect } from "react"
+
+const API = "http://localhost:5000/api"
 
 function Supplies() {
-  const [tab, setTab]           = useState("surgical")
-  const [search, setSearch]     = useState("")
-  const [selectedReq, setSelReq]= useState(null)
+  const [surgicalSupplies, setSurgical]     = useState([])
+  const [pharmaSupplies, setPharma]         = useState([])
+  const [suppliers, setSuppliers]           = useState([])
+  const [requisitions, setRequisitions]     = useState([])
+  const [requisitionItems, setReqItems]     = useState([])
+  const [staff, setStaff]                   = useState([])
+  const [wards, setWards]                   = useState([])
+  const [loading, setLoading]               = useState(true)
+  const [tab, setTab]                       = useState("surgical")
+  const [search, setSearch]                 = useState("")
+  const [selectedReq, setSelReq]            = useState(null)
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`${API}/surgical-supplies`).then(r => r.json()),
+      fetch(`${API}/pharmaceutical-supplies`).then(r => r.json()),
+      fetch(`${API}/suppliers`).then(r => r.json()),
+      fetch(`${API}/requisitions`).then(r => r.json()),
+      fetch(`${API}/requisition-items`).then(r => r.json()),
+      fetch(`${API}/staff`).then(r => r.json()),
+      fetch(`${API}/wards`).then(r => r.json()),
+    ])
+      .then(([surgData, pharmaData, suppData, reqData, reqItemsData, staffData, wardsData]) => {
+        setSurgical(surgData)
+        setPharma(pharmaData)
+        setSuppliers(suppData)
+        setRequisitions(reqData)
+        setReqItems(reqItemsData)
+        setStaff(staffData)
+        setWards(wardsData)
+        setLoading(false)
+      })
+      .catch(err => {
+        console.error("Failed to load supplies data:", err)
+        setLoading(false)
+      })
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="page">
+        <div className="empty">
+          <div className="empty__icon">⏳</div>
+          <div className="empty__text">Loading supplies data from database…</div>
+        </div>
+      </div>
+    )
+  }
 
   const req      = requisitions.find(r => r.requisition_no === selectedReq)
   const reqItems = requisitionItems.filter(i => i.requisition_no === selectedReq)
@@ -41,10 +87,9 @@ function Supplies() {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="stats" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
         <div className="stat stat--teal"><div className="stat__label">Surgical items</div><div className="stat__value">{surgicalSupplies.length}</div></div>
-        <div className="stat stat--blue"><div className="stat__label">Pharmaceutical</div><div className="stat__value">{pharmaceuticalSupplies.length}</div></div>
+        <div className="stat stat--blue"><div className="stat__label">Pharmaceutical</div><div className="stat__value">{pharmaSupplies.length}</div></div>
         <div className="stat stat--purple"><div className="stat__label">Suppliers</div><div className="stat__value">{suppliers.length}</div></div>
         <div className="stat stat--amber"><div className="stat__label">Pending delivery</div><div className="stat__value">{pendingCount}</div></div>
       </div>
@@ -67,35 +112,23 @@ function Supplies() {
 
           <div className="card__body" style={{ paddingBottom: 0 }}>
             <div className="toolbar mb-16">
-              <input
-                className="input-search"
-                placeholder="Search…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
+              <input className="input-search" placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} />
             </div>
           </div>
 
-          {/* Surgical supplies */}
           {tab === "surgical" && (
             <div className="table-wrap">
               <table className="table">
-                <thead>
-                  <tr><th>Item no.</th><th>Name</th><th>Description</th><th>In stock</th><th>Reorder level</th><th>Cost / unit</th></tr>
-                </thead>
+                <thead><tr><th>Item no.</th><th>Name</th><th>Description</th><th>In stock</th><th>Reorder level</th><th>Cost / unit</th></tr></thead>
                 <tbody>
                   {filteredSurgical.map(s => (
                     <tr key={s.item_no}>
                       <td className="mono">{s.item_no}</td>
                       <td className="name">{s.item_name}</td>
                       <td>{s.description}</td>
-                      <td>
-                        <span className={`badge badge--${s.qty_in_stock <= s.reorder_level ? "red" : "green"}`}>
-                          {s.qty_in_stock}
-                        </span>
-                      </td>
+                      <td><span className={`badge badge--${s.qty_in_stock <= s.reorder_level ? "red" : "green"}`}>{s.qty_in_stock}</span></td>
                       <td className="mono">{s.reorder_level}</td>
-                      <td>£{s.cost_per_unit.toFixed(2)}</td>
+                      <td>£{Number(s.cost_per_unit).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -103,13 +136,10 @@ function Supplies() {
             </div>
           )}
 
-          {/* Suppliers */}
           {tab === "suppliers" && (
             <div className="table-wrap">
               <table className="table">
-                <thead>
-                  <tr><th>Supplier no.</th><th>Name</th><th>Address</th><th>Tel. no.</th><th>Fax no.</th></tr>
-                </thead>
+                <thead><tr><th>Supplier no.</th><th>Name</th><th>Address</th><th>Tel. no.</th><th>Fax no.</th></tr></thead>
                 <tbody>
                   {filteredSuppliers.map(s => (
                     <tr key={s.supplier_no}>
@@ -125,34 +155,22 @@ function Supplies() {
             </div>
           )}
 
-          {/* Requisitions list */}
           {tab === "requisitions" && (
             <div className="table-wrap">
               <table className="table">
-                <thead>
-                  <tr><th>Req. no.</th><th>Ward</th><th>Placed by</th><th>Order date</th><th>Delivered</th><th>Status</th></tr>
-                </thead>
+                <thead><tr><th>Req. no.</th><th>Ward</th><th>Placed by</th><th>Order date</th><th>Delivered</th><th>Status</th></tr></thead>
                 <tbody>
                   {filteredReqs.map(r => {
                     const s = staff.find(st => st.staff_no === r.staff_no)
                     const w = wards.find(w => w.ward_no === r.ward_no)
                     return (
-                      <tr
-                        key={r.requisition_no}
-                        className={selectedReq === r.requisition_no ? "selected" : ""}
-                        style={{ cursor: "pointer" }}
-                        onClick={() => setSelReq(selectedReq === r.requisition_no ? null : r.requisition_no)}
-                      >
+                      <tr key={r.requisition_no} className={selectedReq === r.requisition_no ? "selected" : ""} style={{ cursor: "pointer" }} onClick={() => setSelReq(selectedReq === r.requisition_no ? null : r.requisition_no)}>
                         <td className="mono">{r.requisition_no}</td>
                         <td>{w ? w.ward_name : `Ward ${r.ward_no}`}</td>
                         <td className="name">{s ? `${s.first_name} ${s.last_name}` : r.staff_no}</td>
                         <td className="mono">{r.order_date}</td>
                         <td className="mono">{r.delivered_date ?? "—"}</td>
-                        <td>
-                          <span className={`badge badge--${r.delivered_date ? "green" : "amber"}`}>
-                            {r.delivered_date ? "Delivered" : "Pending"}
-                          </span>
-                        </td>
+                        <td><span className={`badge badge--${r.delivered_date ? "green" : "amber"}`}>{r.delivered_date ? "Delivered" : "Pending"}</span></td>
                       </tr>
                     )
                   })}
@@ -162,21 +180,15 @@ function Supplies() {
           )}
         </div>
 
-        {/* Requisition detail panel */}
         {tab === "requisitions" && (
           selectedReq && req ? (
             <div className="card">
               <div className="card__header">
                 <div>
                   <div className="card__title">Requisition #{req.requisition_no}</div>
-                  <div className="card__subtitle">
-                    Ward {req.ward_no} · {req.order_date}
-                    {req.signed_by && ` · Signed: ${req.signed_by}`}
-                  </div>
+                  <div className="card__subtitle">Ward {req.ward_no} · {req.order_date}{req.signed_by && ` · Signed: ${req.signed_by}`}</div>
                 </div>
-                <span className={`badge badge--${req.delivered_date ? "green" : "amber"}`}>
-                  {req.delivered_date ? "Delivered" : "Pending"}
-                </span>
+                <span className={`badge badge--${req.delivered_date ? "green" : "amber"}`}>{req.delivered_date ? "Delivered" : "Pending"}</span>
               </div>
 
               <div style={{ padding: "12px 20px 4px", fontSize: 10.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.7px", color: "var(--text-3)" }}>
@@ -185,24 +197,18 @@ function Supplies() {
 
               <div className="table-wrap">
                 <table className="table">
-                  <thead>
-                    <tr><th>Type</th><th>Item / Drug</th><th>Qty</th><th>Cost / unit</th><th>Subtotal</th></tr>
-                  </thead>
+                  <thead><tr><th>Type</th><th>Item / Drug</th><th>Qty</th><th>Cost / unit</th><th>Subtotal</th></tr></thead>
                   <tbody>
                     {reqItems.map(item => {
-                      const drug = pharmaceuticalSupplies.find(d => d.drug_no === item.drug_no)
+                      const drug = pharmaSupplies.find(d => d.drug_no === item.drug_no)
                       const surg = surgicalSupplies.find(s => s.item_no === item.item_no)
                       const name = drug ? drug.drug_name : surg ? surg.item_name : "Unknown"
                       return (
                         <tr key={item.req_item_id}>
-                          <td>
-                            <span className={`badge badge--${item.item_type === "Pharmaceutical" ? "purple" : "teal"}`}>
-                              {item.item_type}
-                            </span>
-                          </td>
+                          <td><span className={`badge badge--${item.item_type === "Pharmaceutical" ? "purple" : "teal"}`}>{item.item_type}</span></td>
                           <td className="name">{name}</td>
                           <td>{item.qty_required}</td>
-                          <td>£{item.cost_per_unit.toFixed(2)}</td>
+                          <td>£{Number(item.cost_per_unit).toFixed(2)}</td>
                           <td>£{(item.qty_required * item.cost_per_unit).toFixed(2)}</td>
                         </tr>
                       )

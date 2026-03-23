@@ -1,10 +1,55 @@
-import { wards, staff, patients, inPatients, pharmaceuticalSupplies, requisitions } from "../data/mockData"
+import { useState, useEffect } from "react"
+
+const API = "http://localhost:5000/api"
 
 function Dashboard({ setActivePage }) {
-  const totalBeds    = wards.reduce((a, w) => a + w.total_beds, 0)
-  const occupied     = inPatients.filter(ip => !ip.actual_leave_date).length
-  const lowStock     = pharmaceuticalSupplies.filter(d => d.qty_in_stock <= d.reorder_level)
-  const pendingReqs  = requisitions.filter(r => !r.delivered_date).length
+  const [wards, setWards]                   = useState([])
+  const [staff, setStaff]                   = useState([])
+  const [patients, setPatients]             = useState([])
+  const [inPatients, setInPatients]         = useState([])
+  const [pharmaSupplies, setPharmaSupplies] = useState([])
+  const [requisitions, setRequisitions]     = useState([])
+  const [loading, setLoading]               = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`${API}/wards`).then(r => r.json()),
+      fetch(`${API}/staff`).then(r => r.json()),
+      fetch(`${API}/patients`).then(r => r.json()),
+      fetch(`${API}/inpatients`).then(r => r.json()),
+      fetch(`${API}/pharmaceutical-supplies`).then(r => r.json()),
+      fetch(`${API}/requisitions`).then(r => r.json()),
+    ])
+      .then(([wardsData, staffData, patientsData, inPatientsData, pharmaData, reqData]) => {
+        setWards(wardsData)
+        setStaff(staffData)
+        setPatients(patientsData)
+        setInPatients(inPatientsData)
+        setPharmaSupplies(pharmaData)
+        setRequisitions(reqData)
+        setLoading(false)
+      })
+      .catch(err => {
+        console.error("Failed to load dashboard data:", err)
+        setLoading(false)
+      })
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="page">
+        <div className="empty">
+          <div className="empty__icon">⏳</div>
+          <div className="empty__text">Loading dashboard data from database…</div>
+        </div>
+      </div>
+    )
+  }
+
+  const totalBeds   = wards.reduce((a, w) => a + w.total_beds, 0)
+  const occupied    = inPatients.filter(ip => !ip.actual_leave_date).length
+  const lowStock    = pharmaSupplies.filter(d => d.qty_in_stock <= d.reorder_level)
+  const pendingReqs = requisitions.filter(r => !r.delivered_date).length
 
   return (
     <div className="page">
@@ -15,7 +60,6 @@ function Dashboard({ setActivePage }) {
         </div>
       </div>
 
-      {/* ── Alert ── */}
       {lowStock.length > 0 && (
         <div className="alert alert--amber">
           <span>⚠️</span>
@@ -26,7 +70,6 @@ function Dashboard({ setActivePage }) {
         </div>
       )}
 
-      {/* ── Stats ── */}
       <div className="stats">
         <div className="stat stat--blue" style={{ cursor: "pointer" }} onClick={() => setActivePage("wards")}>
           <div className="stat__label">Wards</div>
@@ -45,7 +88,7 @@ function Dashboard({ setActivePage }) {
         </div>
         <div className="stat stat--amber">
           <div className="stat__label">Bed Occupancy</div>
-          <div className="stat__value">{Math.round((occupied / totalBeds) * 100)}%</div>
+          <div className="stat__value">{totalBeds > 0 ? Math.round((occupied / totalBeds) * 100) : 0}%</div>
           <div className="stat__sub">{occupied} of {totalBeds} beds in use</div>
         </div>
         <div className="stat stat--red" style={{ cursor: "pointer" }} onClick={() => setActivePage("medication")}>
@@ -60,10 +103,7 @@ function Dashboard({ setActivePage }) {
         </div>
       </div>
 
-      {/* ── Bottom row ── */}
       <div className="grid-2">
-
-        {/* Ward list */}
         <div className="card">
           <div className="card__header">
             <div className="card__title">Ward Overview</div>
@@ -71,15 +111,7 @@ function Dashboard({ setActivePage }) {
           </div>
           <div className="table-wrap">
             <table className="table">
-              <thead>
-                <tr>
-                  <th>No.</th>
-                  <th>Ward name</th>
-                  <th>Location</th>
-                  <th>Beds</th>
-                  <th>Ext.</th>
-                </tr>
-              </thead>
+              <thead><tr><th>No.</th><th>Ward name</th><th>Location</th><th>Beds</th><th>Ext.</th></tr></thead>
               <tbody>
                 {wards.map(w => (
                   <tr key={w.ward_no}>
@@ -95,7 +127,6 @@ function Dashboard({ setActivePage }) {
           </div>
         </div>
 
-        {/* Current in-patients */}
         <div className="card">
           <div className="card__header">
             <div className="card__title">Current In-Patients</div>
@@ -103,15 +134,7 @@ function Dashboard({ setActivePage }) {
           </div>
           <div className="table-wrap">
             <table className="table">
-              <thead>
-                <tr>
-                  <th>Patient</th>
-                  <th>Ward</th>
-                  <th>Bed</th>
-                  <th>Exp. leave</th>
-                  <th>Stay</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Patient</th><th>Ward</th><th>Bed</th><th>Exp. leave</th><th>Stay</th></tr></thead>
               <tbody>
                 {inPatients.filter(ip => !ip.actual_leave_date).map(ip => {
                   const p = patients.find(pt => pt.patient_no === ip.patient_no)
@@ -129,7 +152,6 @@ function Dashboard({ setActivePage }) {
             </table>
           </div>
         </div>
-
       </div>
     </div>
   )

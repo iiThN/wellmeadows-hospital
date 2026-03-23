@@ -1,9 +1,46 @@
-import { useState } from "react"
-import { wards, staff, inPatients, staffRota } from "../data/mockData"
+import { useState, useEffect } from "react"
+
+const API = "http://localhost:5000/api"
 
 function Wards() {
+  const [wards, setWards]         = useState([])
+  const [staff, setStaff]         = useState([])
+  const [inPatients, setInPats]   = useState([])
+  const [staffRota, setRota]      = useState([])
+  const [loading, setLoading]     = useState(true)
   const [selected, setSelected]   = useState(null)
   const [tab, setTab]             = useState("staff")
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`${API}/wards`).then(r => r.json()),
+      fetch(`${API}/staff`).then(r => r.json()),
+      fetch(`${API}/inpatients`).then(r => r.json()),
+      fetch(`${API}/staff-rota`).then(r => r.json()),
+    ])
+      .then(([wardsData, staffData, ipData, rotaData]) => {
+        setWards(wardsData)
+        setStaff(staffData)
+        setInPats(ipData)
+        setRota(rotaData)
+        setLoading(false)
+      })
+      .catch(err => {
+        console.error("Failed to load ward data:", err)
+        setLoading(false)
+      })
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="page">
+        <div className="empty">
+          <div className="empty__icon">⏳</div>
+          <div className="empty__text">Loading ward data from database…</div>
+        </div>
+      </div>
+    )
+  }
 
   const ward        = wards.find(w => w.ward_no === selected)
   const wardStaff   = staff.filter(s => s.ward_no === selected)
@@ -22,40 +59,22 @@ function Wards() {
 
       <div className="grid-2">
 
-        {/* Left — ward list */}
         <div className="card">
           <div className="card__header">
             <div className="card__title">All Wards ({wards.length})</div>
           </div>
           <div className="table-wrap">
             <table className="table">
-              <thead>
-                <tr>
-                  <th>No.</th>
-                  <th>Ward name</th>
-                  <th>Location</th>
-                  <th>Beds</th>
-                  <th>Ext.</th>
-                </tr>
-              </thead>
+              <thead><tr><th>No.</th><th>Ward name</th><th>Location</th><th>Beds</th><th>Ext.</th></tr></thead>
               <tbody>
                 {wards.map(w => {
                   const occupied = inPatients.filter(ip => ip.ward_no === w.ward_no && !ip.actual_leave_date).length
                   return (
-                    <tr
-                      key={w.ward_no}
-                      className={selected === w.ward_no ? "selected" : ""}
-                      style={{ cursor: "pointer" }}
-                      onClick={() => { setSelected(w.ward_no); setTab("staff") }}
-                    >
+                    <tr key={w.ward_no} className={selected === w.ward_no ? "selected" : ""} style={{ cursor: "pointer" }} onClick={() => { setSelected(w.ward_no); setTab("staff") }}>
                       <td className="mono">{w.ward_no}</td>
                       <td className="name">{w.ward_name}</td>
                       <td><span className="badge badge--gray">{w.location}</span></td>
-                      <td>
-                        <span style={{ fontSize: 12, color: "var(--text-3)" }}>
-                          {occupied}/{w.total_beds}
-                        </span>
-                      </td>
+                      <td><span style={{ fontSize: 12, color: "var(--text-3)" }}>{occupied}/{w.total_beds}</span></td>
                       <td className="mono">{w.tel_extensions}</td>
                     </tr>
                   )
@@ -65,7 +84,6 @@ function Wards() {
           </div>
         </div>
 
-        {/* Right — detail panel */}
         {ward ? (
           <div className="card">
             <div className="card__header">
@@ -86,52 +104,36 @@ function Wards() {
                   { id: "patients", label: "In-patients" },
                   { id: "rota",     label: "Rota" },
                 ].map(t => (
-                  <button
-                    key={t.id}
-                    className={`tabs__btn${tab === t.id ? " active" : ""}`}
-                    onClick={() => setTab(t.id)}
-                  >
+                  <button key={t.id} className={`tabs__btn${tab === t.id ? " active" : ""}`} onClick={() => setTab(t.id)}>
                     {t.label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Staff tab */}
             {tab === "staff" && (
               <div className="table-wrap">
                 <table className="table">
-                  <thead>
-                    <tr><th>No.</th><th>Name</th><th>Position</th><th>Contract</th><th>Hrs/wk</th></tr>
-                  </thead>
+                  <thead><tr><th>No.</th><th>Name</th><th>Position</th><th>Contract</th><th>Hrs/wk</th></tr></thead>
                   <tbody>
                     {wardStaff.length > 0 ? wardStaff.map(s => (
                       <tr key={s.staff_no}>
                         <td className="mono">{s.staff_no}</td>
                         <td className="name">{s.first_name} {s.last_name}</td>
                         <td>{s.position}</td>
-                        <td>
-                          <span className={`badge badge--${s.contract_type === "Permanent" ? "green" : "amber"}`}>
-                            {s.contract_type}
-                          </span>
-                        </td>
+                        <td><span className={`badge badge--${s.contract_type === "Permanent" ? "green" : "amber"}`}>{s.contract_type}</span></td>
                         <td>{s.hrs_per_week}</td>
                       </tr>
-                    )) : (
-                      <tr><td colSpan={5}><div className="empty"><div className="empty__text">No staff allocated to this ward.</div></div></td></tr>
-                    )}
+                    )) : <tr><td colSpan={5}><div className="empty"><div className="empty__text">No staff allocated to this ward.</div></div></td></tr>}
                   </tbody>
                 </table>
               </div>
             )}
 
-            {/* Patients tab */}
             {tab === "patients" && (
               <div className="table-wrap">
                 <table className="table">
-                  <thead>
-                    <tr><th>Patient no.</th><th>Bed</th><th>Date placed</th><th>Exp. leave</th><th>Stay</th></tr>
-                  </thead>
+                  <thead><tr><th>Patient no.</th><th>Bed</th><th>Date placed</th><th>Exp. leave</th><th>Stay</th></tr></thead>
                   <tbody>
                     {wardInPats.length > 0 ? wardInPats.map(ip => (
                       <tr key={ip.inpatient_id}>
@@ -141,21 +143,16 @@ function Wards() {
                         <td className="mono">{ip.expected_leave_date}</td>
                         <td>{ip.expected_stay_date} days</td>
                       </tr>
-                    )) : (
-                      <tr><td colSpan={5}><div className="empty"><div className="empty__text">No current in-patients.</div></div></td></tr>
-                    )}
+                    )) : <tr><td colSpan={5}><div className="empty"><div className="empty__text">No current in-patients.</div></div></td></tr>}
                   </tbody>
                 </table>
               </div>
             )}
 
-            {/* Rota tab */}
             {tab === "rota" && (
               <div className="table-wrap">
                 <table className="table">
-                  <thead>
-                    <tr><th>Staff no.</th><th>Name</th><th>Week beginning</th><th>Shift</th></tr>
-                  </thead>
+                  <thead><tr><th>Staff no.</th><th>Name</th><th>Week beginning</th><th>Shift</th></tr></thead>
                   <tbody>
                     {wardRota.length > 0 ? wardRota.map(r => {
                       const s = staff.find(st => st.staff_no === r.staff_no)
@@ -164,16 +161,10 @@ function Wards() {
                           <td className="mono">{r.staff_no}</td>
                           <td className="name">{s ? `${s.first_name} ${s.last_name}` : r.staff_no}</td>
                           <td className="mono">{r.week_beginning}</td>
-                          <td>
-                            <span className={`badge badge--${r.shift_type === "Early" ? "teal" : r.shift_type === "Late" ? "amber" : "purple"}`}>
-                              {r.shift_type}
-                            </span>
-                          </td>
+                          <td><span className={`badge badge--${r.shift_type === "Early" ? "teal" : r.shift_type === "Late" ? "amber" : "purple"}`}>{r.shift_type}</span></td>
                         </tr>
                       )
-                    }) : (
-                      <tr><td colSpan={4}><div className="empty"><div className="empty__text">No rota data for this ward.</div></div></td></tr>
-                    )}
+                    }) : <tr><td colSpan={4}><div className="empty"><div className="empty__text">No rota data for this ward.</div></div></td></tr>}
                   </tbody>
                 </table>
               </div>
