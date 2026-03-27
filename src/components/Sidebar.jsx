@@ -22,21 +22,36 @@ function Sidebar({ activePage, setActivePage }) {
 
   return (
     <aside className="sidebar">
-      <div className="sidebar__brand">
-        <div className="sidebar__brand-name">Wellmeadows Hospital</div>
+      <div className="sidebar__brand" style={{ textAlign: "center" }}>
+        <div style={{
+          height: 90,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: 6,
+          overflow: "hidden"
+        }}>
+          <img
+            src="/wellmeadows-hospital/logo.png"
+            alt="Wellmeadows Hospital"
+            style={{
+              height: "100%",
+              transform: "scale(1.8)",   // 🔥 zoom the logo
+              transformOrigin: "center",
+              objectFit: "contain",
+              filter: "brightness(0) invert(1)",
+            }}
+          />
+        </div>
         <div className="sidebar__brand-tag">Edinburgh · HMIS</div>
       </div>
-
       <nav className="sidebar__nav">
         {visibleNav.map((item) => {
           const showSection = item.section && item.section !== lastSection
           if (item.section) lastSection = item.section
-
           return (
             <div key={item.id}>
-              {showSection && (
-                <div className="sidebar__section-label">{item.section}</div>
-              )}
+              {showSection && <div className="sidebar__section-label">{item.section}</div>}
               <button
                 className={`sidebar__link${activePage === item.id ? " active" : ""}`}
                 onClick={() => setActivePage(item.id)}
@@ -49,9 +64,23 @@ function Sidebar({ activePage, setActivePage }) {
         })}
       </nav>
 
-      {/* User info + logout */}
+      {/* ── User info + settings + logout ── */}
       <div style={{ padding: "14px 16px", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+
+        {/* User card — clickable to go to settings */}
+        <button
+          onClick={() => setActivePage("settings")}
+          style={{
+            display: "flex", alignItems: "center", gap: 10,
+            marginBottom: 10, width: "100%", background: "none",
+            border: "none", cursor: "pointer", padding: 0,
+            borderRadius: "var(--radius-sm)",
+            transition: "opacity 0.13s",
+          }}
+          onMouseEnter={e => e.currentTarget.style.opacity = "0.8"}
+          onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+          title="Account settings"
+        >
           <div style={{
             width: 32, height: 32, borderRadius: 8,
             background: ROLE_COLORS[currentUser.role],
@@ -61,7 +90,7 @@ function Sidebar({ activePage, setActivePage }) {
           }}>
             {currentUser.avatar}
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
             <div style={{
               fontSize: 12.5, fontWeight: 500,
               color: "rgba(255,255,255,0.85)",
@@ -73,8 +102,21 @@ function Sidebar({ activePage, setActivePage }) {
               {ROLE_LABELS[currentUser.role]}
             </div>
           </div>
-        </div>
+          {/* Settings gear icon */}
+          <div style={{ fontSize: 14, color: "rgba(255,255,255,0.3)" }}>⚙</div>
+        </button>
 
+        {/* Settings shortcut */}
+        <button
+          onClick={() => setActivePage("settings")}
+          className={`sidebar__link${activePage === "settings" ? " active" : ""}`}
+          style={{ marginBottom: 6, fontSize: 12.5 }}
+        >
+          <span className="sidebar__link-icon">⚙️</span>
+          Account Settings
+        </button>
+
+        {/* Logout */}
         <button
           onClick={logout}
           style={{

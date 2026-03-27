@@ -80,6 +80,11 @@ function Staff({ accessLevel = "full" }) {
     return matchSearch && matchPos
   })
 
+  const isPermanent = (value) => {
+    const v = String(value ?? "").trim().toLowerCase()
+    return v === "permanent" || v === "p"
+  }
+
   const s    = staff.find(st => st.staff_no === selected)
   const ward = s ? wards.find(w => w.ward_no === s.ward_no) : null
 
@@ -111,7 +116,7 @@ function Staff({ accessLevel = "full" }) {
         <div>
           <div className="page__title">Staff Management</div>
           <div className="page__subtitle">
-            {staff.length} staff members · {staff.filter(s => s.contract_type === "Permanent").length} permanent
+            {staff.length} staff members · {staff.filter(s => isPermanent(s.contract_type)).length} permanent
           </div>
         </div>
       </div>

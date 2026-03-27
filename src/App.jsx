@@ -13,8 +13,8 @@ import Patients          from "./components/Patients"
 import Medication        from "./components/Medication"
 import Supplies          from "./components/Supplies"
 import AccountManagement from "./components/AccountManagement"
+import AccountSettings   from "./components/AccountSettings"
 
-// ── ACCESS BLOCKED ────────────────────────────────────────────────────────────
 function AccessDenied() {
   return (
     <div className="page">
@@ -31,7 +31,6 @@ function AccessDenied() {
   )
 }
 
-// ── INNER APP (after login) ───────────────────────────────────────────────────
 function AppInner() {
   const { currentUser } = useAuth()
   const [activePage, setActivePage] = useState("dashboard")
@@ -39,7 +38,9 @@ function AppInner() {
   const access = getAccessLevel(currentUser.role, activePage)
 
   const renderPage = () => {
-    if (activePage === "dashboard") return <Dashboard setActivePage={setActivePage} />
+    // Settings is always accessible to any logged-in user
+    if (activePage === "settings")   return <AccountSettings />
+    if (activePage === "dashboard")  return <Dashboard setActivePage={setActivePage} />
     if (!access) return <AccessDenied />
 
     switch (activePage) {
@@ -64,7 +65,6 @@ function AppInner() {
   )
 }
 
-// ── ROOT ──────────────────────────────────────────────────────────────────────
 function App() {
   return (
     <AuthProvider>

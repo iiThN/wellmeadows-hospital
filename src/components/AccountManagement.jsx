@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "../data/supabaseClient"
 import { ROLE_LABELS, ROLE_BADGE, ROLES } from "../data/users"
+import { useAuth } from "../AuthContext"
 
 const ROLE_OPTIONS = [
   { value: ROLES.PERSONNEL_OFFICER, label: "Personnel Officer" },
@@ -67,6 +68,7 @@ function Field({ label, required, children }) {
 
 // ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 function AccountManagement() {
+  const { currentUser } = useAuth()
   const [accounts, setAccounts]   = useState([])
   const [wards, setWards]         = useState([])
   const [loading, setLoading]     = useState(true)
@@ -267,11 +269,34 @@ function AccountManagement() {
     setSaving(true)
     setFormError("")
     try {
-      // Update account
-      const accUpdates = { username: account.username.trim(), role: account.role, is_active: account.is_active }
-      if (account.password.trim()) accUpdates.password = account.password.trim()
-      const { error: accErr } = await supabase.from("staff_account").update(accUpdates).eq("account_id", selected.account_id)
+      // ── 1. Update username / password through normal UPDATE
+      //    (the BEFORE UPDATE trigger allows only these two fields)
+      const credUpdates = { username: account.username.trim() }
+      if (account.password.trim()) {
+        if (account.password.trim().length < 8)
+          throw new Error("Password must be at least 8 characters.")
+        credUpdates.password = account.password.trim()
+      }
+      const { error: accErr } = await supabase.rpc("update_account_credentials", {
+        p_account_id: selected.account_id,
+        p_username: credUpdates.username,
+        p_password: credUpdates.password,
+        p_changed_by: currentUser?.username
+      })
       if (accErr) throw accErr
+
+      // ── 2. Update role / is_active via RPC (bypasses the trigger)
+      const roleChanged   = account.role      !== selected.role
+      const activeChanged = account.is_active !== selected.is_active
+      if (roleChanged || activeChanged) {
+        const { error: rpcErr } = await supabase.rpc("update_account_role_status", {
+          p_account_id: selected.account_id,
+          p_role: account.role,
+          p_is_active: account.is_active,
+          p_changed_by: currentUser?.username,
+        })
+        if (rpcErr) throw new Error("Role/status update failed: " + rpcErr.message)
+      }
 
       // Update staff record if linked
       if (selected.staff_no) {
@@ -306,7 +331,19 @@ function AccountManagement() {
   // ── Toggle active ─────────────────────────────────────────────────────────
   const toggleActive = async (acc) => {
     if (acc.role === "admin") return
-    await supabase.from("staff_account").update({ is_active: !acc.is_active }).eq("account_id", acc.account_id)
+
+    const { error } = await supabase.rpc("update_account_role_status", {
+      p_account_id: acc.account_id,
+      p_role: acc.role,
+      p_is_active: !acc.is_active,
+      p_changed_by: currentUser?.username || "system",
+    })
+
+    if (error) {
+      setFormError(error.message)
+      return
+    }
+
     await loadData()
   }
 

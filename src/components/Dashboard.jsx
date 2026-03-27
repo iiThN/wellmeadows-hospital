@@ -10,6 +10,10 @@ function Dashboard({ setActivePage }) {
   const [requisitions, setRequisitions]     = useState([])
   const [loading, setLoading]               = useState(true)
   const [error, setError]                   = useState(null)
+  const isPermanent = (value) => {
+    const v = String(value ?? "").trim().toLowerCase()
+    return v === "permanent" || v === "p"
+  }
 
   useEffect(() => {
     async function loadData() {
@@ -104,7 +108,7 @@ function Dashboard({ setActivePage }) {
         <div className="stat stat--teal" style={{ cursor: "pointer" }} onClick={() => setActivePage("staff")}>
           <div className="stat__label">Staff</div>
           <div className="stat__value">{staff.length}</div>
-          <div className="stat__sub">{staff.filter(s => s.contract_type === "Permanent").length} permanent</div>
+          <div className="stat__sub">{staff.filter(s => isPermanent(s.contract_type)).length} permanent</div>
         </div>
         <div className="stat stat--purple" style={{ cursor: "pointer" }} onClick={() => setActivePage("patients")}>
           <div className="stat__label">Patients</div>

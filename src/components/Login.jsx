@@ -28,26 +28,25 @@ function Login() {
     }}>
       <div style={{ width: "100%", maxWidth: 400 }}>
 
-        {/* Brand */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{
-            width: 52, height: 52,
-            background: "var(--gray-800)",
-            borderRadius: 14,
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 24,
-            marginBottom: 14,
-          }}>
-            🏥
-          </div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: "var(--gray-800)", letterSpacing: "-0.3px" }}>
-            Wellmeadows Hospital
-          </h1>
-          <p style={{ fontSize: 13, color: "var(--gray-400)", marginTop: 4 }}>
-            Hospital Management Information System
-          </p>
+      {/* Brand */}
+              <div style={{
+          height: 90,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: 6,
+          overflow: "hidden"
+        }}>
+          <img
+            src="/wellmeadows-hospital/logo.png"
+            alt="Wellmeadows Hospital"
+            style={{
+              height: "100%",
+              transform: "scale(1.8)",   // 🔥 zoom the logo
+              transformOrigin: "center",
+              objectFit: "contain",
+            }}
+          />
         </div>
 
         {/* Card */}
