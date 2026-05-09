@@ -63,7 +63,8 @@ type Tab = 'details' | 'admission' | 'nextofkin' | 'appointments';
 type Modal = null | 'register' | 'edit' | 'admit' | 'outpatient' | 'appointment';
 
 function getStatus(p: Patient) {
-    if (p.inpatient && !p.inpatient.actual_leave_date) return { label: 'In-Patient', color: 'bg-teal-100 text-teal-700' };
+    const isAdmitted = p.inpatient && !p.inpatient.actual_leave_date;
+    if (isAdmitted) return { label: 'In-Patient', color: 'bg-teal-100 text-teal-700' };
     if (p.outpatient) return { label: 'Out-Patient', color: 'bg-amber-100 text-amber-700' };
     return { label: 'Registered', color: 'bg-gray-100 text-gray-600' };
 }
@@ -131,8 +132,20 @@ export default function PatientsPage({
 
     async function refreshSelected() {
         if (!selected) return;
-        const res = await axios.get(`/modules/patient-management/${selected.patient_number}/details`);
-        setSelected(res.data);
+        const patientNumber = selected.patient_number;
+
+        router.reload({
+            preserveScroll: true,
+            onSuccess: async () => {
+                // Re-fetch yung selected patient pagkatapos mag-reload
+                try {
+                    const res = await axios.get(`/modules/patient-management/${patientNumber}/details`);
+                    setSelected(res.data);
+                } catch {
+                    setSelected(null);
+                }
+            }
+        });
     }
 
     const filtered = patients.filter(p => {
@@ -516,7 +529,7 @@ export default function PatientsPage({
                                         </button>
                                     ) : (
                                         <button type="button" disabled={registerForm.processing}
-                                            onClick={() => registerForm.post('/charge-nurse/patients', { preserveScroll: true, onSuccess: () => { setModal(null); registerForm.reset(); } })}
+                                            onClick={() => registerForm.post('/modules/patient-management', { preserveScroll: true, onSuccess: () => { setModal(null); registerForm.reset(); } })}
                                             className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">
                                             {registerForm.processing ? 'Registering…' : '✓ Register Patient'}
                                         </button>

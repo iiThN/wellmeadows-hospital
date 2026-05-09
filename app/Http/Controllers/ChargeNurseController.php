@@ -58,8 +58,14 @@ class ChargeNurseController extends Controller
 
     public function patientDetails(string $id)
     {
-        $patient = Patient::with(['inpatient', 'outpatient', 'nextOfKin', 'appointments', 'localDoctor'])
-            ->findOrFail($id);
+        $patient = Patient::with([
+            'inpatient' => fn($q) => $q->whereNull('actual_leave_date'),
+            'outpatient',
+            'nextOfKin',
+            'appointments',
+            'localDoctor'
+        ])->findOrFail($id);
+
         return response()->json($patient);
     }
 
@@ -154,23 +160,32 @@ class ChargeNurseController extends Controller
     public function admitStore(Request $request, string $id)
     {
         $validated = $request->validate([
-            'ward_number'        => 'required|integer',
-            'bed_number'         => 'required|integer',
-            'date_on_waitlist'   => 'nullable|date',
-            'date_placed'        => 'required|date',
-            'expected_leave_date'=> 'nullable|date',
-            'expected_stay_days' => 'nullable|integer',
+            'ward_number'         => 'required|integer',
+            'bed_number'          => 'required|integer',
+            'date_on_waitlist'    => 'nullable|date',
+            'date_placed'         => 'required|date',
+            'expected_leave_date' => 'nullable|date',
+            'expected_stay_days'  => 'nullable|integer',
         ]);
 
+        // Prevent duplicate active admission
+        $existing = Inpatient::where('patient_number', $id)
+                            ->whereNull('actual_leave_date')
+                            ->first();
+
+        if ($existing) {
+            return back()->with('error', 'Patient is already admitted.');
+        }
+
         Inpatient::create([
-            'patient_number'     => $id,
-            'ward_number'        => $validated['ward_number'],
-            'bed_number'         => $validated['bed_number'],
-            'date_on_waitlist'   => $validated['date_on_waitlist'] ?? null,
-            'date_placed'        => $validated['date_placed'],
-            'expected_leave_date'=> $validated['expected_leave_date'] ?? null,
-            'expected_stay_days' => $validated['expected_stay_days'] ?? null,
-            'actual_leave_date'  => null,
+            'patient_number'      => $id,
+            'ward_number'         => $validated['ward_number'],
+            'bed_number'          => $validated['bed_number'],
+            'date_on_waitlist'    => $validated['date_on_waitlist'] ?? null,
+            'date_placed'         => $validated['date_placed'],
+            'expected_leave_date' => $validated['expected_leave_date'] ?? null,
+            'expected_stay_days'  => $validated['expected_stay_days'] ?? null,
+            'actual_leave_date'   => null,
         ]);
 
         return back()->with('success', 'Patient admitted.');
