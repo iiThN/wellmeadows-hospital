@@ -59,11 +59,13 @@ class ChargeNurseController extends Controller
     public function patientDetails(string $id)
     {
         $patient = Patient::with([
-            'inpatient' => fn($q) => $q->whereNull('actual_leave_date'),
+            'inpatient',
+            'inpatientHistory',
             'outpatient',
+            'outpatientHistory',
             'nextOfKin',
             'appointments',
-            'localDoctor'
+            'localDoctor',
         ])->findOrFail($id);
 
         return response()->json($patient);
@@ -194,11 +196,19 @@ class ChargeNurseController extends Controller
     // Discharge
     public function discharge(string $id)
     {
+        $today = now()->toDateString();
+
         Inpatient::where('patient_number', $id)
             ->whereNull('actual_leave_date')
-            ->update(['actual_leave_date' => now()->toDateString()]);
+            ->update(['actual_leave_date' => $today]);
 
-        return back()->with('success', 'Patient discharged.');
+        Outpatient::create([
+            'patient_number'   => $id,
+            'appointment_date' => $today,
+            'appointment_time' => '08:00:00',
+        ]);
+
+        return back()->with('success', 'Patient discharged and moved to out-patient.');
     }
 
     // Outpatient
