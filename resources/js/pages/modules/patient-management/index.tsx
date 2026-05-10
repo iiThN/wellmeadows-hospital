@@ -171,7 +171,7 @@ export default function PatientsPage({
     return (
         <AppLayout>
             <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold text-gray-800">Patient Management</h2>
+                <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">Patient Management</h2>
                 <button onClick={openRegister} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
                     + Register Patient
                 </button>
@@ -187,12 +187,12 @@ export default function PatientsPage({
 
             <div className="grid grid-cols-2 gap-6 items-start">
                 {/* Patient list */}
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between gap-2">
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-2">
                         <div className="flex gap-1">
                             {(['all', 'in', 'out'] as const).map(v => (
                                 <button key={v} onClick={() => setView(v)}
-                                    className={`px-3 py-1 text-xs rounded-lg font-medium ${view === v ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                                    className={`px-3 py-1 text-xs rounded-lg font-medium ${view === v ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
                                     {v === 'all' ? 'All' : v === 'in' ? 'In-Patients' : 'Out-Patients'}
                                 </button>
                             ))}
@@ -200,11 +200,11 @@ export default function PatientsPage({
                         <input
                             placeholder="Search…" value={search}
                             onChange={e => setSearch(e.target.value)}
-                            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-40"
+                            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-40 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
                         />
                     </div>
                     <table className="w-full text-sm">
-                        <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                        <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 uppercase text-xs">
                             <tr>
                                 <th className="px-4 py-3 text-left">No.</th>
                                 <th className="px-4 py-3 text-left">Name</th>
@@ -212,13 +212,13 @@ export default function PatientsPage({
                                 <th className="px-4 py-3 text-left">Status</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                             {filtered.map(p => {
                                 const status = getStatus(p);
                                 return (
                                     <tr key={p.patient_number}
                                         onClick={() => selectPatient(p)}
-                                        className={`cursor-pointer hover:bg-gray-50 ${selected?.patient_number === p.patient_number ? 'bg-blue-50' : ''}`}>
+                                        className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 ${selected?.patient_number === p.patient_number ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}>
                                         <td className="px-4 py-3 font-mono text-xs">P{p.patient_number}</td>
                                         <td className="px-4 py-3 font-medium">{p.first_name} {p.last_name}</td>
                                         <td className="px-4 py-3 text-xs">{p.sex}</td>
@@ -237,11 +237,11 @@ export default function PatientsPage({
 
                 {/* Detail panel */}
                 {selected ? (
-                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                        <div className="px-5 py-4 border-b border-gray-200 flex items-start justify-between">
+                    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-start justify-between">
                             <div>
-                                <p className="font-semibold text-gray-800">{selected.first_name} {selected.last_name}</p>
-                                <p className="text-xs text-gray-500">P{selected.patient_number} · Registered {selected.date_registered}</p>
+                                <p className="font-semibold text-gray-800 dark:text-gray-100">{selected.first_name} {selected.last_name}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">P{selected.patient_number} · Registered {selected.date_registered}</p>
                             </div>
                             <div className="flex gap-2 items-center">
                                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatus(selected).color}`}>
@@ -252,7 +252,7 @@ export default function PatientsPage({
                         </div>
 
                         {/* Action buttons */}
-                        <div className="px-5 py-3 border-b border-gray-200 flex gap-2 flex-wrap">
+                        <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-700 flex gap-2 flex-wrap">
                             {!isAdmitted && (
                                 <button onClick={() => setModal('admit')}
                                     className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">
@@ -284,10 +284,10 @@ export default function PatientsPage({
                         </div>
 
                         {/* Tabs */}
-                        <div className="flex border-b border-gray-200">
+                        <div className="flex border-b border-gray-200 dark:border-gray-700">
                             {tabs.map(t => (
                                 <button key={t.id} onClick={() => setTab(t.id)}
-                                    className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                                    className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
                                     {t.label}
                                 </button>
                             ))}
@@ -305,10 +305,10 @@ export default function PatientsPage({
                                         <Detail label="Telephone" value={selected.telephone} />
                                         <div className="col-span-2"><Detail label="Address" value={selected.address} /></div>
                                         {selected.local_doctor && (
-                                            <div className="col-span-2 pt-3 border-t border-gray-100">
-                                                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Local Doctor</p>
-                                                <p className="font-medium text-gray-800">{selected.local_doctor.full_name}</p>
-                                                <p className="text-xs text-gray-500">{selected.local_doctor?.telephone ?? '—'}</p>
+                                            <div className="col-span-2 pt-3 border-t border-gray-100 dark:border-gray-700">
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Local Doctor</p>
+                                                <p className="font-medium text-gray-800 dark:text-gray-100">{selected.local_doctor.full_name}</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">{selected.local_doctor?.telephone ?? '—'}</p>
                                             </div>
                                         )}
                                     </div>
@@ -339,14 +339,14 @@ export default function PatientsPage({
 
                                 {tab === 'nextofkin' && (
                                     <table className="w-full text-sm">
-                                        <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                                        <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 uppercase text-xs">
                                             <tr>
                                                 <th className="px-4 py-3 text-left">Name</th>
                                                 <th className="px-4 py-3 text-left">Relationship</th>
                                                 <th className="px-4 py-3 text-left">Telephone</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-100">
+                                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                             {selected.next_of_kin?.length > 0 ? selected.next_of_kin.map(k => (
                                                 <tr key={k.id}>
                                                     <td className="px-4 py-3 font-medium">{k.full_name}</td>
@@ -360,7 +360,7 @@ export default function PatientsPage({
 
                                 {tab === 'appointments' && (
                                     <table className="w-full text-sm">
-                                        <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                                        <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 uppercase text-xs">
                                             <tr>
                                                 <th className="px-4 py-3 text-left">No.</th>
                                                 <th className="px-4 py-3 text-left">Date</th>
@@ -368,7 +368,7 @@ export default function PatientsPage({
                                                 <th className="px-4 py-3 text-left">Outcome</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-100">
+                                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                             {selected.appointments?.length > 0 ? selected.appointments.map(a => (
                                                 <tr key={a.appointment_number}>
                                                     <td className="px-4 py-3 font-mono text-xs">{a.appointment_number}</td>
@@ -388,7 +388,7 @@ export default function PatientsPage({
                         )}
                     </div>
                 ) : (
-                    <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center h-64">
+                    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-center h-64">
                         <p className="text-gray-400 text-sm">Select a patient to view their record.</p>
                     </div>
                 )}
@@ -397,9 +397,9 @@ export default function PatientsPage({
             {/* ── MODALS ── */}
             {modal && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setModal(null)}>
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-5">
-                            <h3 className="text-lg font-semibold text-gray-800">
+                            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
                                 {modal === 'register'    ? 'Register New Patient' :
                                  modal === 'edit'        ? 'Edit Patient' :
                                  modal === 'admit'       ? `Admit — P${selected?.patient_number}` :
@@ -413,7 +413,7 @@ export default function PatientsPage({
                         {modal === 'register' && (
                             <>
                                 {/* Step indicator */}
-                                <div className="flex mb-5 border-b border-gray-200">
+                                <div className="flex mb-5 border-b border-gray-200 dark:border-gray-700">
                                     {['Patient Info', 'Next of Kin', 'Local Doctor'].map((s, i) => (
                                         <div key={s} className={`flex-1 text-center pb-2 text-xs font-medium border-b-2 -mb-px ${step === i ? 'border-blue-600 text-blue-600' : step > i ? 'border-green-500 text-green-600' : 'border-transparent text-gray-400'}`}>
                                             {step > i ? '✓ ' : ''}{s}
@@ -462,7 +462,7 @@ export default function PatientsPage({
                                 {step === 1 && (
                                     <div className="space-y-3">
                                         {(registerForm.data.kin as any[]).map((k, i) => (
-                                            <div key={i} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                            <div key={i} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <Field label="Full Name">
                                                         <input value={k.full_name} onChange={e => { const kin = [...registerForm.data.kin as any[]]; kin[i].full_name = e.target.value; registerForm.setData('kin', kin); }} className={inp} />
@@ -504,9 +504,9 @@ export default function PatientsPage({
                                     </div>
                                 )}
 
-                                <div className="flex justify-between mt-6 pt-4 border-t border-gray-200">
+                                <div className="flex justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                                     <button type="button" onClick={step === 0 ? () => setModal(null) : () => setStep(s => s - 1)}
-                                        className="px-4 py-2 text-sm text-gray-600 hover:underline">
+                                        className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:underline">
                                         {step === 0 ? 'Cancel' : '← Back'}
                                     </button>
                                     {step < 2 ? (
@@ -537,9 +537,9 @@ export default function PatientsPage({
                                     <Field label="Telephone"><input value={editForm.data.telephone} onChange={e => editForm.setData('telephone', e.target.value)} className={inp} /></Field>
                                     <div className="col-span-2"><Field label="Address"><input value={editForm.data.address} onChange={e => editForm.setData('address', e.target.value)} className={inp} /></Field></div>
                                 </div>
-                                <div className="flex gap-3 pt-2 border-t border-gray-200">
+                                <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
                                     <button type="submit" disabled={editForm.processing} className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">{editForm.processing ? 'Saving…' : 'Save Changes'}</button>
-                                    <button type="button" onClick={() => setModal(null)} className="px-5 py-2 text-sm text-gray-600 hover:underline">Cancel</button>
+                                    <button type="button" onClick={() => setModal(null)} className="px-5 py-2 text-sm text-gray-600 dark:text-gray-400 hover:underline">Cancel</button>
                                 </div>
                             </form>
                         )}
@@ -570,9 +570,9 @@ export default function PatientsPage({
                                         <input type="number" value={admitForm.data.expected_stay_days} onChange={e => admitForm.setData('expected_stay_days', e.target.value)} className={inp} placeholder="e.g. 5" />
                                     </Field>
                                 </div>
-                                <div className="flex gap-3 pt-2 border-t border-gray-200">
+                                <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
                                     <button type="submit" disabled={admitForm.processing} className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">{admitForm.processing ? 'Admitting…' : '✓ Admit Patient'}</button>
-                                    <button type="button" onClick={() => setModal(null)} className="px-5 py-2 text-sm text-gray-600 hover:underline">Cancel</button>
+                                    <button type="button" onClick={() => setModal(null)} className="px-5 py-2 text-sm text-gray-600 dark:text-gray-400 hover:underline">Cancel</button>
                                 </div>
                             </form>
                         )}
@@ -586,9 +586,9 @@ export default function PatientsPage({
                                 <Field label="Appointment Time" error={outpatientForm.errors.appointment_time}>
                                     <input type="time" value={outpatientForm.data.appointment_time} onChange={e => outpatientForm.setData('appointment_time', e.target.value)} className={inp} />
                                 </Field>
-                                <div className="flex gap-3 pt-2 border-t border-gray-200">
+                                <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
                                     <button type="submit" disabled={outpatientForm.processing} className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">{outpatientForm.processing ? 'Saving…' : '✓ Set Appointment'}</button>
-                                    <button type="button" onClick={() => setModal(null)} className="px-5 py-2 text-sm text-gray-600 hover:underline">Cancel</button>
+                                    <button type="button" onClick={() => setModal(null)} className="px-5 py-2 text-sm text-gray-600 dark:text-gray-400 hover:underline">Cancel</button>
                                 </div>
                             </form>
                         )}
@@ -622,9 +622,9 @@ export default function PatientsPage({
                                         </select>
                                     </Field>
                                 </div>
-                                <div className="flex gap-3 pt-2 border-t border-gray-200">
+                                <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
                                     <button type="submit" disabled={appointmentForm.processing} className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">{appointmentForm.processing ? 'Saving…' : '✓ Record Appointment'}</button>
-                                    <button type="button" onClick={() => setModal(null)} className="px-5 py-2 text-sm text-gray-600 hover:underline">Cancel</button>
+                                    <button type="button" onClick={() => setModal(null)} className="px-5 py-2 text-sm text-gray-600 dark:text-gray-400 hover:underline">Cancel</button>
                                 </div>
                             </form>
                         )}
@@ -653,8 +653,8 @@ function StatCard({ label, value, color }: { label: string; value: number; color
 function Detail({ label, value }: { label: string; value: string }) {
     return (
         <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
-            <p className="text-gray-800 font-medium mt-0.5">{value || '—'}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{label}</p>
+            <p className="text-gray-800 dark:text-gray-100 font-medium mt-0.5">{value || '—'}</p>
         </div>
     );
 }
@@ -662,11 +662,11 @@ function Detail({ label, value }: { label: string; value: string }) {
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
     return (
         <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
             {children}
             {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
         </div>
     );
 }
 
-const inp = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
+const inp = 'w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100';

@@ -5,6 +5,7 @@ use App\Http\Controllers\ChargeNurseController;
 use App\Http\Controllers\DirectorController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Modules\WardManagementController;
+use App\Http\Controllers\Modules\AppointmentTreatmentController;
 
 // Root redirect
 Route::get('/', function () {
@@ -103,4 +104,18 @@ Route::middleware(['auth'])
         Route::get('/{id}/details', [WardManagementController::class, 'show'])->name('ward.show');
     });
 
+// Module: Appointment & Treatment
+Route::middleware(['auth'])
+    ->prefix('modules/appointment-treatment')
+    ->group(function () {
+        Route::get('/', [AppointmentTreatmentController::class, 'index'])->name('appointment.index');
+        Route::post('/appointments', [AppointmentTreatmentController::class, 'appointmentStore'])->name('appointment.store');
+        Route::put('/appointments/{id}', [AppointmentTreatmentController::class, 'appointmentUpdate'])->name('appointment.update');
+        Route::delete('/appointments/{id}', [AppointmentTreatmentController::class, 'appointmentDestroy'])->name('appointment.destroy');
+        Route::post('/appointments/{id}/treatment', [AppointmentTreatmentController::class, 'treatmentStore'])->name('treatment.store');
+        Route::delete('/appointments/{id}/treatment', [AppointmentTreatmentController::class, 'treatmentDestroy'])->name('treatment.destroy');
+        Route::get('/outpatient-report', [AppointmentTreatmentController::class, 'outpatientReport'])->name('appointment.outpatient.report');
+    });
+
 require __DIR__.'/auth.php';
+require __DIR__.'/settings.php';

@@ -86,7 +86,7 @@ export default function RotaPage({
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
 
                 <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold">Staff Rota</h2>
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Staff Rota</h2>
                     <button onClick={() => setModal(true)}
                         className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
                         + Add Rota Entry
@@ -102,18 +102,18 @@ export default function RotaPage({
                 </div>
 
                 {/* Filters */}
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-gray-200 flex items-center gap-3 flex-wrap">
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3 flex-wrap">
                         <input
                             placeholder="Search staff…"
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
+                            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-48 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
                         />
                         <select
                             value={filterWard}
                             onChange={e => setFilterWard(e.target.value)}
-                            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
                         >
                             <option value="">All Wards</option>
                             {wards.map(w => (
@@ -125,7 +125,7 @@ export default function RotaPage({
                         <select
                             value={filterWeek}
                             onChange={e => setFilterWeek(e.target.value)}
-                            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
                         >
                             <option value="">All Weeks</option>
                             {weeks.map(w => (
@@ -135,7 +135,7 @@ export default function RotaPage({
                         {(search || filterWard || filterWeek) && (
                             <button
                                 onClick={() => { setSearch(''); setFilterWard(''); setFilterWeek(''); }}
-                                className="text-xs text-gray-500 hover:text-gray-700 hover:underline"
+                                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:underline"
                             >
                                 Clear filters
                             </button>
@@ -144,7 +144,7 @@ export default function RotaPage({
                     </div>
 
                     <table className="w-full text-sm">
-                        <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                        <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 uppercase text-xs">
                             <tr>
                                 <th className="px-4 py-3 text-left">Staff No.</th>
                                 <th className="px-4 py-3 text-left">Name</th>
@@ -154,19 +154,19 @@ export default function RotaPage({
                                 <th className="px-4 py-3 text-left">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                             {filtered.map(r => {
                                 const s = staff.find(st => st.staff_number === r.staff_number);
                                 const w = wards.find(wd => wd.ward_number === r.ward_number);
                                 return (
-                                    <tr key={r.rota_id} className="hover:bg-gray-50">
+                                    <tr key={r.rota_id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                                         <td className="px-4 py-3 font-mono text-xs">{r.staff_number}</td>
                                         <td className="px-4 py-3 font-medium">
                                             {s ? `${s.first_name} ${s.last_name}` : r.staff_number}
                                         </td>
                                         <td className="px-4 py-3">
                                             {w ? (
-                                                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+                                                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                                                     Ward {w.ward_number} — {w.ward_name}
                                                 </span>
                                             ) : `Ward ${r.ward_number}`}
@@ -203,9 +203,9 @@ export default function RotaPage({
             {/* Modal */}
             {modal && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setModal(false)}>
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-5">
-                            <h3 className="text-lg font-semibold text-gray-800">Add Rota Entry</h3>
+                            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Add Rota Entry</h3>
                             <button onClick={() => setModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
                         </div>
 
@@ -261,7 +261,7 @@ export default function RotaPage({
                                 </select>
                             </Field>
 
-                            <div className="flex gap-3 pt-2 border-t border-gray-200">
+                            <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
                                 <button
                                     type="submit"
                                     disabled={form.processing}
@@ -272,7 +272,7 @@ export default function RotaPage({
                                 <button
                                     type="button"
                                     onClick={() => setModal(false)}
-                                    className="px-5 py-2 text-sm text-gray-600 hover:underline"
+                                    className="px-5 py-2 text-sm text-gray-600 dark:text-gray-400 hover:underline"
                                 >
                                     Cancel
                                 </button>
@@ -303,11 +303,11 @@ function StatCard({ label, value, color }: { label: string; value: number; color
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
     return (
         <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
             {children}
             {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
         </div>
     );
 }
 
-const inp = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
+const inp = 'w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100';
