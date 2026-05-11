@@ -62,7 +62,7 @@ export default function StaffIndex({ staff }: { staff: Staff[] }) {
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-semibold text-gray-800">Staff</h2>
                 <Link
-                    href="/personnel/staff/create"
+                    href="/modules/staff-management/create"
                     className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
                 >
                     + Add Staff
@@ -97,7 +97,7 @@ export default function StaffIndex({ staff }: { staff: Staff[] }) {
                                     </td>
                                     <td className="px-4 py-3 space-x-2">
                                         <Link
-                                            href={`/personnel/staff/${s.staff_number}/edit`}
+                                            href={`/modules/staff-management/${s.staff_number}/edit`}
                                             onClick={e => e.stopPropagation()}
                                             className="text-blue-600 hover:underline text-xs"
                                         >

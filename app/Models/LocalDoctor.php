@@ -5,7 +5,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class LocalDoctor extends Model
 {
-    protected $table = 'localdoctor';
+    protected $table = 'local_doctors';
     protected $primaryKey = 'clinic_number';
     public $incrementing = false;
     protected $keyType = 'string';

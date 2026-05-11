@@ -5,7 +5,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Appointment extends Model
 {
-    protected $table = 'appointment';
+    protected $table = 'appointments';
     protected $primaryKey = 'appointment_number';
     public $incrementing = false;
     protected $keyType = 'string';

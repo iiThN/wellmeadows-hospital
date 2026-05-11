@@ -27,7 +27,9 @@ class ChargeNurseController extends Controller
             'stats' => [
                 'total_patients'  => Patient::count(),
                 'inpatients'      => Inpatient::whereNull('actual_leave_date')->count(),
-                'outpatients'     => Outpatient::count(),
+                'outpatients' => Outpatient::whereNotIn('patient_number',
+                    Inpatient::whereNull('actual_leave_date')->pluck('patient_number')
+                )->distinct('patient_number')->count('patient_number'),
                 'appointments'    => Appointment::count(),
             ]
         ]);
@@ -35,7 +37,7 @@ class ChargeNurseController extends Controller
 
     public function patients()
     {
-        $patients = Patient::with(['inpatient', 'outpatient', 'localDoctor'])
+        $patients = Patient::with(['inpatient', 'outpatient', 'appointments', 'localDoctor'])
             ->orderBy('last_name')
             ->get();
 
@@ -58,8 +60,16 @@ class ChargeNurseController extends Controller
 
     public function patientDetails(string $id)
     {
-        $patient = Patient::with(['inpatient', 'outpatient', 'nextOfKin', 'appointments', 'localDoctor'])
-            ->findOrFail($id);
+        $patient = Patient::with([
+            'inpatient',
+            'inpatientHistory',
+            'outpatient',
+            'outpatientHistory',
+            'nextOfKin',
+            'appointments',
+            'localDoctor',
+        ])->findOrFail($id);
+
         return response()->json($patient);
     }
 
@@ -67,7 +77,7 @@ class ChargeNurseController extends Controller
     public function patientStore(Request $request)
     {
         $validated = $request->validate([
-            'patient_number'  => 'required|string|unique:patient,patient_number',
+            'patient_number'  => 'required|string|unique:patients,patient_number',
             'first_name'      => 'required|string|max:100',
             'last_name'       => 'required|string|max:100',
             'address'         => 'nullable|string',
@@ -154,23 +164,32 @@ class ChargeNurseController extends Controller
     public function admitStore(Request $request, string $id)
     {
         $validated = $request->validate([
-            'ward_number'        => 'required|integer',
-            'bed_number'         => 'required|integer',
-            'date_on_waitlist'   => 'nullable|date',
-            'date_placed'        => 'required|date',
-            'expected_leave_date'=> 'nullable|date',
-            'expected_stay_days' => 'nullable|integer',
+            'ward_number'         => 'required|integer',
+            'bed_number'          => 'required|integer',
+            'date_on_waitlist'    => 'nullable|date',
+            'date_placed'         => 'required|date',
+            'expected_leave_date' => 'nullable|date',
+            'expected_stay_days'  => 'nullable|integer',
         ]);
 
+        // Prevent duplicate active admission
+        $existing = Inpatient::where('patient_number', $id)
+                            ->whereNull('actual_leave_date')
+                            ->first();
+
+        if ($existing) {
+            return back()->with('error', 'Patient is already admitted.');
+        }
+
         Inpatient::create([
-            'patient_number'     => $id,
-            'ward_number'        => $validated['ward_number'],
-            'bed_number'         => $validated['bed_number'],
-            'date_on_waitlist'   => $validated['date_on_waitlist'] ?? null,
-            'date_placed'        => $validated['date_placed'],
-            'expected_leave_date'=> $validated['expected_leave_date'] ?? null,
-            'expected_stay_days' => $validated['expected_stay_days'] ?? null,
-            'actual_leave_date'  => null,
+            'patient_number'      => $id,
+            'ward_number'         => $validated['ward_number'],
+            'bed_number'          => $validated['bed_number'],
+            'date_on_waitlist'    => $validated['date_on_waitlist'] ?? null,
+            'date_placed'         => $validated['date_placed'],
+            'expected_leave_date' => $validated['expected_leave_date'] ?? null,
+            'expected_stay_days'  => $validated['expected_stay_days'] ?? null,
+            'actual_leave_date'   => null,  
         ]);
 
         return back()->with('success', 'Patient admitted.');
@@ -179,11 +198,19 @@ class ChargeNurseController extends Controller
     // Discharge
     public function discharge(string $id)
     {
+        $today = now()->toDateString();
+
         Inpatient::where('patient_number', $id)
             ->whereNull('actual_leave_date')
-            ->update(['actual_leave_date' => now()->toDateString()]);
+            ->update(['actual_leave_date' => $today]);
 
-        return back()->with('success', 'Patient discharged.');
+        Outpatient::create([
+            'patient_number'   => $id,
+            'appointment_date' => $today,
+            'appointment_time' => '08:00:00',
+        ]);
+
+        return back()->with('success', 'Patient discharged and moved to out-patient.');
     }
 
     // Outpatient
@@ -207,7 +234,7 @@ class ChargeNurseController extends Controller
     public function appointmentStore(Request $request, string $id)
     {
         $validated = $request->validate([
-            'appointment_number' => 'required|string|unique:appointment,appointment_number',
+            'appointment_number' => 'required|string|unique:appointments,appointment_number',
             'consultant_number'  => 'required|string',
             'appointment_date'   => 'required|date',
             'appointment_time'   => 'nullable|string',
@@ -338,7 +365,7 @@ class ChargeNurseController extends Controller
     {
         $validated = $request->validate([
             'staff_number'  => 'required|string|exists:staff,staff_number',
-            'ward_number'   => 'required|integer|exists:ward,ward_number',
+            'ward_number'   => 'required|integer|exists:wards,ward_number',
             'week_beginning'=> 'required|date',
             'shift'         => 'required|in:Early,Late,Night',
         ]);

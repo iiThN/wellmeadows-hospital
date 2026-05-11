@@ -92,7 +92,7 @@ export default function StaffCreate() {
                             className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">
                             Save Staff
                         </button>
-                        <a href="/personnel/staff" className="px-5 py-2 text-sm text-gray-600 hover:underline">Cancel</a>
+                        <a href="/modules/staff-management" className="px-5 py-2 text-sm text-gray-600 hover:underline">Cancel</a>
                     </div>
                 </form>
             </div>
