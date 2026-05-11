@@ -45,7 +45,7 @@ class WardManagementController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'ward_number'   => 'required|integer|unique:ward,ward_number',
+            'ward_number'   => 'required|integer|unique:wards,ward_number',
             'ward_name'     => 'required|string|max:100',
             'location'      => 'required|string|max:100',
             'total_beds'    => 'required|integer|min:1',

@@ -157,7 +157,7 @@ export default function PatientsPage({
         const name = `${p.first_name} ${p.last_name}`.toLowerCase();
         const matchSearch = name.includes(search.toLowerCase()) || p.patient_number.includes(search);
         if (view === 'in')  return matchSearch && p.inpatient && !p.inpatient.actual_leave_date;
-        if (view === 'out') return matchSearch && p.outpatient;
+        if (view === 'out') return matchSearch && p.outpatient && !(p.inpatient && !p.inpatient.actual_leave_date);
         return matchSearch;
     });
 
@@ -199,7 +199,7 @@ export default function PatientsPage({
             <div className="grid grid-cols-4 gap-4 mb-6">
                 <StatCard label="Registered" value={patients.length} color="blue" />
                 <StatCard label="In-Patients" value={patients.filter(p => p.inpatient && !p.inpatient.actual_leave_date).length} color="teal" />
-                <StatCard label="Out-Patients" value={patients.filter(p => p.outpatient).length} color="amber" />
+                <StatCard label="Out-Patients" value={patients.filter(p => p.outpatient && !(p.inpatient && !p.inpatient.actual_leave_date)).length} color="amber" />
                 <StatCard label="Appointments" value={patients.reduce((a, p) => a + (p.appointments?.length ?? 0), 0)} color="purple" />
             </div>
 

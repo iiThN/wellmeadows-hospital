@@ -27,7 +27,9 @@ class ChargeNurseController extends Controller
             'stats' => [
                 'total_patients'  => Patient::count(),
                 'inpatients'      => Inpatient::whereNull('actual_leave_date')->count(),
-                'outpatients'     => Outpatient::count(),
+                'outpatients' => Outpatient::whereNotIn('patient_number',
+                    Inpatient::whereNull('actual_leave_date')->pluck('patient_number')
+                )->distinct('patient_number')->count('patient_number'),
                 'appointments'    => Appointment::count(),
             ]
         ]);
@@ -35,7 +37,7 @@ class ChargeNurseController extends Controller
 
     public function patients()
     {
-        $patients = Patient::with(['inpatient', 'outpatient', 'localDoctor'])
+        $patients = Patient::with(['inpatient', 'outpatient', 'appointments', 'localDoctor'])
             ->orderBy('last_name')
             ->get();
 
@@ -75,7 +77,7 @@ class ChargeNurseController extends Controller
     public function patientStore(Request $request)
     {
         $validated = $request->validate([
-            'patient_number'  => 'required|string|unique:patient,patient_number',
+            'patient_number'  => 'required|string|unique:patients,patient_number',
             'first_name'      => 'required|string|max:100',
             'last_name'       => 'required|string|max:100',
             'address'         => 'nullable|string',
@@ -187,7 +189,7 @@ class ChargeNurseController extends Controller
             'date_placed'         => $validated['date_placed'],
             'expected_leave_date' => $validated['expected_leave_date'] ?? null,
             'expected_stay_days'  => $validated['expected_stay_days'] ?? null,
-            'actual_leave_date'   => null,
+            'actual_leave_date'   => null,  
         ]);
 
         return back()->with('success', 'Patient admitted.');
@@ -232,7 +234,7 @@ class ChargeNurseController extends Controller
     public function appointmentStore(Request $request, string $id)
     {
         $validated = $request->validate([
-            'appointment_number' => 'required|string|unique:appointment,appointment_number',
+            'appointment_number' => 'required|string|unique:appointments,appointment_number',
             'consultant_number'  => 'required|string',
             'appointment_date'   => 'required|date',
             'appointment_time'   => 'nullable|string',
@@ -363,7 +365,7 @@ class ChargeNurseController extends Controller
     {
         $validated = $request->validate([
             'staff_number'  => 'required|string|exists:staff,staff_number',
-            'ward_number'   => 'required|integer|exists:ward,ward_number',
+            'ward_number'   => 'required|integer|exists:wards,ward_number',
             'week_beginning'=> 'required|date',
             'shift'         => 'required|in:Early,Late,Night',
         ]);
