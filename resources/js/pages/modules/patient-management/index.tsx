@@ -15,7 +15,9 @@ interface Patient {
     date_registered: string;
     clinic_number: string | null;
     inpatient: Inpatient | null;
+    inpatient_history: Inpatient[];
     outpatient: Outpatient | null;
+    outpatient_history: Outpatient[];
     next_of_kin: Kin[];
     appointments: Appointment[];
     local_doctor: Doctor | null;
@@ -63,8 +65,12 @@ type Tab = 'details' | 'admission' | 'nextofkin' | 'appointments';
 type Modal = null | 'register' | 'edit' | 'admit' | 'outpatient' | 'appointment';
 
 function getStatus(p: Patient) {
-    if (p.inpatient && !p.inpatient.actual_leave_date) return { label: 'In-Patient', color: 'bg-teal-100 text-teal-700' };
-    if (p.outpatient) return { label: 'Out-Patient', color: 'bg-amber-100 text-amber-700' };
+    if (p.inpatient && !p.inpatient.actual_leave_date) {
+        return { label: 'In-Patient', color: 'bg-teal-100 text-teal-700' };
+    }
+    if (p.outpatient) {
+        return { label: 'Out-Patient', color: 'bg-amber-100 text-amber-700' };
+    }
     return { label: 'Registered', color: 'bg-gray-100 text-gray-600' };
 }
 
@@ -131,15 +137,27 @@ export default function PatientsPage({
 
     async function refreshSelected() {
         if (!selected) return;
-        const res = await axios.get(`/modules/patient-management/${selected.patient_number}/details`);
-        setSelected(res.data);
+        const patientNumber = selected.patient_number;
+
+        router.reload({
+            preserveScroll: true,
+            onSuccess: async () => {
+                // Re-fetch yung selected patient pagkatapos mag-reload
+                try {
+                    const res = await axios.get(`/modules/patient-management/${patientNumber}/details`);
+                    setSelected(res.data);
+                } catch {
+                    setSelected(null);
+                }
+            }
+        });
     }
 
     const filtered = patients.filter(p => {
         const name = `${p.first_name} ${p.last_name}`.toLowerCase();
         const matchSearch = name.includes(search.toLowerCase()) || p.patient_number.includes(search);
         if (view === 'in')  return matchSearch && p.inpatient && !p.inpatient.actual_leave_date;
-        if (view === 'out') return matchSearch && p.outpatient;
+        if (view === 'out') return matchSearch && p.outpatient && !(p.inpatient && !p.inpatient.actual_leave_date);
         return matchSearch;
     });
 
@@ -181,7 +199,7 @@ export default function PatientsPage({
             <div className="grid grid-cols-4 gap-4 mb-6">
                 <StatCard label="Registered" value={patients.length} color="blue" />
                 <StatCard label="In-Patients" value={patients.filter(p => p.inpatient && !p.inpatient.actual_leave_date).length} color="teal" />
-                <StatCard label="Out-Patients" value={patients.filter(p => p.outpatient).length} color="amber" />
+                <StatCard label="Out-Patients" value={patients.filter(p => p.outpatient && !(p.inpatient && !p.inpatient.actual_leave_date)).length} color="amber" />
                 <StatCard label="Appointments" value={patients.reduce((a, p) => a + (p.appointments?.length ?? 0), 0)} color="purple" />
             </div>
 
@@ -315,25 +333,80 @@ export default function PatientsPage({
                                 )}
 
                                 {tab === 'admission' && (
-                                    <div className="p-5">
-                                        {selected.inpatient ? (
-                                            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                                    <div className="p-5 space-y-6">
+
+                                        {/* Current status */}
+                                        {selected.inpatient && !selected.inpatient.actual_leave_date ? (
+                                            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm bg-teal-50 rounded-lg p-4 border border-teal-100">
                                                 <Detail label="Ward" value={`Ward ${selected.inpatient.ward_number}`} />
                                                 <Detail label="Bed" value={String(selected.inpatient.bed_number)} />
                                                 <Detail label="Date Placed" value={selected.inpatient.date_placed} />
                                                 <Detail label="Expected Leave" value={selected.inpatient.expected_leave_date ?? '—'} />
-                                                <Detail label="Actual Leave" value={selected.inpatient.actual_leave_date ?? 'Still admitted'} />
-                                                <Detail label="Expected Stay" value={selected.inpatient.expected_stay_days ? `${selected.inpatient.expected_stay_days} days` : '—'} />
                                             </div>
                                         ) : selected.outpatient ? (
-                                            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                                                <Detail label="Type" value="Out-Patient" />
-                                                <Detail label="Appointment Date" value={selected.outpatient.appointment_date} />
-                                                <Detail label="Appointment Time" value={selected.outpatient.appointment_time} />
+                                            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm bg-amber-50 rounded-lg p-4 border border-amber-100">
+                                                <Detail label="Status" value="Out-Patient" />
+                                                <Detail label="Last Appointment" value={selected.outpatient.appointment_date} />
+                                                <Detail label="Time" value={selected.outpatient.appointment_time} />
                                             </div>
                                         ) : (
-                                            <p className="text-gray-400 text-sm text-center py-8">No admission record.</p>
+                                            <p className="text-gray-400 text-sm py-3">No active record.</p>
                                         )}
+
+                                        {/* Admission history */}
+                                        {selected.inpatient_history?.length > 0 && (
+                                            <div>
+                                                <p className="text-xs text-gray-500 uppercase tracking-wide mb-2 font-semibold">Admission History</p>
+                                                <table className="w-full text-sm border border-gray-100 rounded-lg overflow-hidden">
+                                                    <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+                                                        <tr>
+                                                            <th className="px-3 py-2 text-left">Ward</th>
+                                                            <th className="px-3 py-2 text-left">Bed</th>
+                                                            <th className="px-3 py-2 text-left">Admitted</th>
+                                                            <th className="px-3 py-2 text-left">Discharged</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-100">
+                                                        {selected.inpatient_history.map((ip, i) => (
+                                                            <tr key={i} className={ip.actual_leave_date ? '' : 'bg-teal-50 font-medium'}>
+                                                                <td className="px-3 py-2">Ward {ip.ward_number}</td>
+                                                                <td className="px-3 py-2">{ip.bed_number}</td>
+                                                                <td className="px-3 py-2">{ip.date_placed}</td>
+                                                                <td className="px-3 py-2">
+                                                                    {ip.actual_leave_date ?? <span className="text-teal-600 text-xs">Still admitted</span>}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
+
+                                        {/* Outpatient visit history */}
+                                        {selected.outpatient_history?.length > 0 && (
+                                            <div>
+                                                <p className="text-xs text-gray-500 uppercase tracking-wide mb-2 font-semibold">Out-Patient Visit History</p>
+                                                <table className="w-full text-sm border border-gray-100 rounded-lg overflow-hidden">
+                                                    <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+                                                        <tr>
+                                                            <th className="px-3 py-2 text-left">#</th>
+                                                            <th className="px-3 py-2 text-left">Date</th>
+                                                            <th className="px-3 py-2 text-left">Time</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-100">
+                                                        {selected.outpatient_history.map((op, i) => (
+                                                            <tr key={i}>
+                                                                <td className="px-3 py-2 text-gray-400 text-xs">{i + 1}</td>
+                                                                <td className="px-3 py-2">{op.appointment_date}</td>
+                                                                <td className="px-3 py-2">{op.appointment_time}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
+
                                     </div>
                                 )}
 
@@ -516,7 +589,7 @@ export default function PatientsPage({
                                         </button>
                                     ) : (
                                         <button type="button" disabled={registerForm.processing}
-                                            onClick={() => registerForm.post('/charge-nurse/patients', { preserveScroll: true, onSuccess: () => { setModal(null); registerForm.reset(); } })}
+                                            onClick={() => registerForm.post('/modules/patient-management', { preserveScroll: true, onSuccess: () => { setModal(null); registerForm.reset(); } })}
                                             className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">
                                             {registerForm.processing ? 'Registering…' : '✓ Register Patient'}
                                         </button>

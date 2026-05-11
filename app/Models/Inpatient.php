@@ -5,7 +5,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Inpatient extends Model
 {
-    protected $table = 'inpatient';
+    protected $table = 'inpatients';
     protected $primaryKey = 'id';
 
     protected $fillable = [
