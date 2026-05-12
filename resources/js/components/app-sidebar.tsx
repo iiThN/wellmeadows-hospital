@@ -3,27 +3,17 @@ import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
-import { Link, usePage } from '@inertiajs/react';
 import { LayoutGrid, Users, UserCircle, Pill, Package, Building2, FileText, Stethoscope } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import AppLogo from './app-logo';
-
-interface PageProps extends Record<string, unknown> {
-    auth?: {
-        user?: {
-            name: string;
-            role: string;
-        };
-    };
-}
 
 const navByRole: Record<string, NavItem[]> = {
     personnel_officer: [
         { title: 'Dashboard',          url: '/personnel/dashboard',           icon: LayoutGrid },
         { title: 'Staff Management',   url: '/modules/staff-management',      icon: Users },
         { title: 'Account Management', url: '/modules/account-management',    icon: UserCircle },
-        { title: 'Ward Management',    url: '/modules/ward-management',       icon: Building2 },
-        { title: 'Appointments & Treatment', url: '/modules/appointment-treatment', icon: Stethoscope },
-
+        
     ],
     charge_nurse: [
         { title: 'Dashboard',          url: '/charge-nurse/dashboard',        icon: LayoutGrid },
@@ -33,23 +23,20 @@ const navByRole: Record<string, NavItem[]> = {
         { title: 'Staff Rota',         url: '/modules/rota',                  icon: Users },
         { title: 'Ward Management',    url: '/modules/ward-management',       icon: Building2 },
         { title: 'Appointments & Treatment', url: '/modules/appointment-treatment', icon: Stethoscope },
-
     ],
     medical_director: [
         { title: 'Dashboard',          url: '/director/dashboard',            icon: LayoutGrid },
         { title: 'Ward Management',    url: '/modules/ward-management',       icon: Building2 },
-        { title: 'Suppliers',          url: '/modules/suppliers',             icon: Package },
         { title: 'Reports',            url: '/modules/reports',               icon: FileText },
         { title: 'Appointments & Treatment', url: '/modules/appointment-treatment', icon: Stethoscope },
-
     ],
 };
 
 const footerNavItems: NavItem[] = [];
 
 export function AppSidebar() {
-    const { auth } = usePage<PageProps>().props;
-    const role = auth?.user?.role ?? '';
+    const { user } = useAuth();
+    const role = user?.role ?? '';
     const mainNavItems = navByRole[role] ?? [];
 
     return (
@@ -58,7 +45,7 @@ export function AppSidebar() {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href="/" prefetch>
+                            <Link to="/">
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>

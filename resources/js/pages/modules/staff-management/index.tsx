@@ -1,140 +1,97 @@
 import AppLayout from '@/layouts/app-layout';
-import { useForm, router } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
-import { Head } from '@inertiajs/react';
+import { useState, useEffect, useCallback } from 'react';
 import { type BreadcrumbItem } from '@/types';
 import axios from 'axios';
+import { useFetch } from '@/hooks/useFetch';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Staff Management', href: '/modules/staff-management' },
-];
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Staff Management', href: '/modules/staff-management' }];
 
 interface Staff {
-    staff_number: string;
-    first_name: string;
-    last_name: string;
-    telephone: string;
-    sex: string;
-    contract_type: string;
-    current_salary: number;
-    address: string;
-    date_of_birth: string;
-    nin: string;
-    salary_scale: string;
-    pay_type: string;
-    hours_per_week: number;
+    staff_number: string; first_name: string; last_name: string; telephone: string;
+    sex: string; contract_type: string; current_salary: number; address: string;
+    date_of_birth: string; nin: string; salary_scale: string; pay_type: string; hours_per_week: number;
     qualifications: { id: number; qual_type: string; date_obtained: string; institution: string }[];
     workExperiences: { id: number; position: string; organization: string; start_date: string; finish_date: string }[];
     rotas: { rota_id: number; week_beginning: string; shift: string; ward_number: number }[];
 }
 
-type Tab   = 'details' | 'qualifications' | 'experience' | 'shifts';
+type Tab = 'details' | 'qualifications' | 'experience' | 'shifts';
 type Modal = null | 'create' | 'edit';
 
-export default function StaffManagement({ staff }: { staff: Staff[] }) {
-    const [selected, setSelected]     = useState<Staff | null>(null);
-    const [tab, setTab]               = useState<Tab>('details');
-    const [modal, setModal]           = useState<Modal>(null);
+const blankCreate = { staff_number:'', first_name:'', last_name:'', address:'', telephone:'', date_of_birth:'', sex:'Male', nin:'', current_salary:'', salary_scale:'', pay_type:'Monthly', hours_per_week:'', contract_type:'Permanent' };
+const blankEdit   = { first_name:'', last_name:'', address:'', telephone:'', date_of_birth:'', sex:'Male', nin:'', current_salary:'', salary_scale:'', pay_type:'Monthly', hours_per_week:'', contract_type:'Permanent' };
+
+const initialData = { staff: [] as Staff[] };
+
+export default function StaffManagement() {
+    const { data, loading } = useFetch('/api/modules/staff-management', initialData);
+
+    const [staff, setStaff]       = useState<Staff[]>([]);
+    const [selected, setSelected] = useState<Staff | null>(null);
+    const [tab, setTab]           = useState<Tab>('details');
+    const [modal, setModal]       = useState<Modal>(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
-    const [search, setSearch]         = useState('');
+    const [processing, setProcessing]       = useState(false);
+    const [search, setSearch]     = useState('');
+    const [errors, setErrors]     = useState<Record<string, string>>({});
+    const [createData, setCreateData] = useState({ ...blankCreate });
+    const [editData, setEditData]     = useState({ ...blankEdit });
 
-    useEffect(() => { setModal(null); }, []);
+    useEffect(() => {
+        if (data.staff) setStaff(data.staff);
+    }, [data]);
 
-    const createForm = useForm({
-        staff_number:  '',
-        first_name:    '',
-        last_name:     '',
-        address:       '',
-        telephone:     '',
-        date_of_birth: '',
-        sex:           'Male',
-        nin:           '',
-        current_salary:  '',
-        salary_scale:    '',
-        pay_type:        'Monthly',
-        hours_per_week:  '',
-        contract_type:   'Permanent',
-    });
-
-    const editForm = useForm({
-        first_name:    '',
-        last_name:     '',
-        address:       '',
-        telephone:     '',
-        date_of_birth: '',
-        sex:           'Male',
-        nin:           '',
-        current_salary:  '',
-        salary_scale:    '',
-        pay_type:        'Monthly',
-        hours_per_week:  '',
-        contract_type:   'Permanent',
-    });
+    const reloadData = useCallback(() => {
+        axios.get('/api/modules/staff-management').then(r => setStaff(r.data.staff ?? r.data));
+    }, []);
 
     async function selectStaff(s: Staff) {
-        if (selected?.staff_number === s.staff_number) return;
-        setLoadingDetail(true);
+        // Show panel immediately with list data; enrich with full details in background
+        setSelected({ ...s, qualifications: [], workExperiences: [], rotas: [] });
         setTab('details');
+        setLoadingDetail(true);
         try {
-            const res = await axios.get(`/modules/staff-management/${s.staff_number}/details`);
-            setSelected(res.data);
+            const r = await axios.get(`/api/modules/staff-management/${s.staff_number}/details`);
+            setSelected(r.data);
         } catch {
-            setSelected(s);
+            // leave optimistic data as-is
         } finally {
             setLoadingDetail(false);
         }
     }
 
-    function openCreate() {
-        createForm.reset();
-        setModal('create');
-    }
-
+    function openCreate() { setCreateData({ ...blankCreate }); setErrors({}); setModal('create'); }
     function openEdit(s: Staff) {
-        editForm.setData({
-            first_name:    s.first_name,
-            last_name:     s.last_name,
-            address:       s.address ?? '',
-            telephone:     s.telephone ?? '',
-            date_of_birth: s.date_of_birth,
-            sex:           s.sex,
-            nin:           s.nin ?? '',
-            current_salary:  String(s.current_salary),
-            salary_scale:    s.salary_scale ?? '',
-            pay_type:        s.pay_type,
-            hours_per_week:  String(s.hours_per_week),
-            contract_type:   s.contract_type,
-        });
-        setModal('edit');
+        setEditData({ first_name: s.first_name, last_name: s.last_name, address: s.address ?? '', telephone: s.telephone ?? '', date_of_birth: s.date_of_birth, sex: s.sex, nin: s.nin ?? '', current_salary: String(s.current_salary), salary_scale: s.salary_scale ?? '', pay_type: s.pay_type, hours_per_week: String(s.hours_per_week), contract_type: s.contract_type });
+        setErrors({}); setModal('edit');
     }
 
-    function submitCreate(e: React.FormEvent) {
-        e.preventDefault();
-        createForm.post('/modules/staff-management', {
-            preserveScroll: true,
-            onSuccess: () => { setModal(null); createForm.reset(); },
-        });
+    async function submitCreate(e: React.FormEvent) {
+        e.preventDefault(); setProcessing(true); setErrors({});
+        try { await axios.post('/api/modules/staff-management', createData); setModal(null); reloadData(); }
+        catch (err: any) { const d = err?.response?.data?.errors ?? {}; const f: Record<string,string> = {}; Object.entries(d).forEach(([k,v]) => f[k] = (v as string[])[0]); setErrors(f); }
+        finally { setProcessing(false); }
     }
 
-    function submitEdit(e: React.FormEvent) {
-        e.preventDefault();
-        editForm.put(`/modules/staff-management/${selected!.staff_number}`, {
-            preserveScroll: true,
-            onSuccess: () => { setModal(null); },
-        });
+    async function submitEdit(e: React.FormEvent) {
+        e.preventDefault(); setProcessing(true); setErrors({});
+        try { await axios.put(`/api/modules/staff-management/${selected!.staff_number}`, editData); setModal(null); reloadData(); }
+        catch (err: any) { const d = err?.response?.data?.errors ?? {}; const f: Record<string,string> = {}; Object.entries(d).forEach(([k,v]) => f[k] = (v as string[])[0]); setErrors(f); }
+        finally { setProcessing(false); }
     }
 
-    function destroy(id: string, e: React.MouseEvent) {
+    async function destroy(id: string, e: React.MouseEvent) {
         e.stopPropagation();
-        if (confirm('Delete this staff member?')) {
-            router.delete(`/modules/staff-management/${id}`, { preserveScroll: true });
-        }
+        if (!confirm('Delete this staff member?')) return;
+        await axios.delete(`/api/modules/staff-management/${id}`);
+        if (selected?.staff_number === id) setSelected(null);
+        reloadData();
     }
 
-    const filtered = staff.filter(s => {
-        const name = `${s.first_name} ${s.last_name}`.toLowerCase();
-        return name.includes(search.toLowerCase()) || s.staff_number.toLowerCase().includes(search.toLowerCase());
-    });
+    const filtered = staff.filter(s =>
+        `${s.first_name} ${s.last_name}`.toLowerCase().includes(search.toLowerCase()) ||
+        s.staff_number.toLowerCase().includes(search.toLowerCase())
+    );
 
     const tabs: { id: Tab; label: string }[] = [
         { id: 'details',        label: 'Details' },
@@ -145,36 +102,38 @@ export default function StaffManagement({ staff }: { staff: Staff[] }) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Staff Management" />
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
-
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Staff Management</h2>
-                    <button onClick={openCreate}
-                        className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
-                        + Add Staff
-                    </button>
+                    <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">+ Add Staff</button>
                 </div>
 
-                {/* Stats */}
+                {/* Stat Cards */}
                 <div className="grid grid-cols-4 gap-4">
-                    <StatCard label="Total Staff"  value={staff.length} color="blue" />
-                    <StatCard label="Permanent"    value={staff.filter(s => s.contract_type === 'Permanent').length}  color="teal" />
-                    <StatCard label="Temporary"    value={staff.filter(s => s.contract_type === 'Temporary').length}  color="amber" />
-                    <StatCard label="Full-Time"    value={staff.filter(s => s.hours_per_week >= 35).length} color="purple" />
+                    {loading ? (
+                        Array.from({ length: 4 }).map((_, i) => (
+                            <div key={i} className="rounded-xl p-4 border border-gray-100 bg-gray-50">
+                                <div className="h-3 w-24 rounded bg-gray-200 animate-pulse mb-2" />
+                                <div className="h-7 w-12 rounded bg-gray-200 animate-pulse" />
+                            </div>
+                        ))
+                    ) : (
+                        <>
+                            <StatCard label="Total Staff" value={staff.length} color="blue" />
+                            <StatCard label="Permanent"   value={staff.filter(s => s.contract_type === 'Permanent').length} color="teal" />
+                            <StatCard label="Temporary"   value={staff.filter(s => s.contract_type === 'Temporary').length} color="amber" />
+                            <StatCard label="Full-Time"   value={staff.filter(s => s.hours_per_week >= 35).length} color="purple" />
+                        </>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-6 items-start">
-                    {/* Staff list */}
+                    {/* Staff List */}
                     <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                         <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Staff ({filtered.length})</p>
-                            <input
-                                placeholder="Search…"
-                                value={search}
-                                onChange={e => setSearch(e.target.value)}
-                                className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-40 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
-                            />
+                            <input placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)}
+                                className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-40 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100" />
                         </div>
                         <table className="w-full text-sm">
                             <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 uppercase text-xs">
@@ -186,45 +145,44 @@ export default function StaffManagement({ staff }: { staff: Staff[] }) {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                {filtered.map(s => (
-                                    <tr
-                                        key={s.staff_number}
-                                        onClick={() => selectStaff(s)}
-                                        className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 ${selected?.staff_number === s.staff_number ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                                    >
-                                        <td className="px-4 py-3 font-mono text-xs">{s.staff_number}</td>
-                                        <td className="px-4 py-3 font-medium">{s.first_name} {s.last_name}</td>
-                                        <td className="px-4 py-3">
-                                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${s.contract_type === 'Permanent' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                                                {s.contract_type}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 space-x-2" onClick={e => e.stopPropagation()}>
-                                            <button
-                                                onClick={() => { selectStaff(s); openEdit(s); }}
-                                                className="text-blue-600 hover:underline text-xs"
-                                            >
-                                                Edit
-                                            </button>
-                                            <button
-                                                onClick={e => destroy(s.staff_number, e)}
-                                                className="text-red-500 hover:underline text-xs"
-                                            >
-                                                Delete
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {filtered.length === 0 && (
-                                    <tr>
-                                        <td colSpan={4} className="px-4 py-8 text-center text-gray-400 text-sm">No staff records found.</td>
-                                    </tr>
+                                {loading ? (
+                                    Array.from({ length: 5 }).map((_, i) => (
+                                        <tr key={i}>
+                                            {Array.from({ length: 4 }).map((_, j) => (
+                                                <td key={j} className="px-4 py-3">
+                                                    <div className="h-4 rounded bg-gray-100 animate-pulse" />
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <>
+                                        {filtered.map(s => (
+                                            <tr key={s.staff_number} onClick={() => selectStaff(s)}
+                                                className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 ${selected?.staff_number === s.staff_number ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}>
+                                                <td className="px-4 py-3 font-mono text-xs">{s.staff_number}</td>
+                                                <td className="px-4 py-3 font-medium">{s.first_name} {s.last_name}</td>
+                                                <td className="px-4 py-3">
+                                                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${s.contract_type === 'Permanent' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                        {s.contract_type}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 space-x-2" onClick={e => e.stopPropagation()}>
+                                                    <button onClick={() => { selectStaff(s); openEdit(s); }} className="text-blue-600 hover:underline text-xs">Edit</button>
+                                                    <button onClick={e => destroy(s.staff_number, e)} className="text-red-500 hover:underline text-xs">Delete</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {filtered.length === 0 && (
+                                            <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400 text-sm">No staff records found.</td></tr>
+                                        )}
+                                    </>
                                 )}
                             </tbody>
                         </table>
                     </div>
 
-                    {/* Detail panel */}
+                    {/* Detail Panel */}
                     {selected ? (
                         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                             <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-start justify-between">
@@ -232,29 +190,26 @@ export default function StaffManagement({ staff }: { staff: Staff[] }) {
                                     <p className="font-semibold text-gray-800 dark:text-gray-100">{selected.first_name} {selected.last_name}</p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">{selected.staff_number}</p>
                                 </div>
-                                <button
-                                    onClick={() => openEdit(selected)}
-                                    className="text-xs text-blue-600 hover:underline"
-                                >
-                                    Edit
-                                </button>
+                                <button onClick={() => openEdit(selected)} className="text-xs text-blue-600 hover:underline">Edit</button>
                             </div>
-
-                            {/* Tabs */}
                             <div className="flex border-b border-gray-200 dark:border-gray-700">
                                 {tabs.map(t => (
-                                    <button
-                                        key={t.id}
-                                        onClick={() => setTab(t.id)}
-                                        className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
-                                    >
+                                    <button key={t.id} onClick={() => setTab(t.id)}
+                                        className={`px-4 py-2 text-xs font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
                                         {t.label}
                                     </button>
                                 ))}
                             </div>
-
                             {loadingDetail ? (
-                                <div className="p-8 text-center text-gray-400 text-sm">Loading…</div>
+                                <div className="p-4">
+                                    {Array.from({ length: 4 }).map((_, i) => (
+                                        <div key={i} className="flex gap-4 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                                            {Array.from({ length: 4 }).map((_, j) => (
+                                                <div key={j} className="h-4 flex-1 rounded bg-gray-100 dark:bg-gray-800 animate-pulse" />
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
                             ) : (
                                 <>
                                     {tab === 'details' && (
@@ -268,12 +223,9 @@ export default function StaffManagement({ staff }: { staff: Staff[] }) {
                                             <Detail label="Pay Type"     value={selected.pay_type} />
                                             <Detail label="Hours/Week"   value={String(selected.hours_per_week)} />
                                             <Detail label="Contract"     value={selected.contract_type} />
-                                            <div className="col-span-2">
-                                                <Detail label="Address" value={selected.address} />
-                                            </div>
+                                            <div className="col-span-2"><Detail label="Address" value={selected.address} /></div>
                                         </div>
                                     )}
-
                                     {tab === 'qualifications' && (
                                         <table className="w-full text-sm">
                                             <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 uppercase text-xs">
@@ -284,17 +236,19 @@ export default function StaffManagement({ staff }: { staff: Staff[] }) {
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                                {selected.qualifications?.length > 0 ? selected.qualifications.map(q => (
-                                                    <tr key={q.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                                                        <td className="px-4 py-3 font-medium">{q.qual_type}</td>
-                                                        <td className="px-4 py-3 font-mono text-xs">{q.date_obtained}</td>
-                                                        <td className="px-4 py-3">{q.institution}</td>
-                                                    </tr>
-                                                )) : <EmptyRow cols={3} message="No qualifications recorded." />}
+                                                {selected.qualifications?.length > 0
+                                                    ? selected.qualifications.map(q => (
+                                                        <tr key={q.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                                            <td className="px-4 py-3">{q.qual_type}</td>
+                                                            <td className="px-4 py-3 font-mono text-xs">{q.date_obtained}</td>
+                                                            <td className="px-4 py-3">{q.institution}</td>
+                                                        </tr>
+                                                    ))
+                                                    : <tr><td colSpan={3} className="px-4 py-8 text-center text-gray-400 text-sm">No qualifications recorded.</td></tr>
+                                                }
                                             </tbody>
                                         </table>
                                     )}
-
                                     {tab === 'experience' && (
                                         <table className="w-full text-sm">
                                             <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 uppercase text-xs">
@@ -306,18 +260,20 @@ export default function StaffManagement({ staff }: { staff: Staff[] }) {
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                                {selected.workExperiences?.length > 0 ? selected.workExperiences.map(e => (
-                                                    <tr key={e.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                                                        <td className="px-4 py-3 font-medium">{e.position}</td>
-                                                        <td className="px-4 py-3">{e.organization}</td>
-                                                        <td className="px-4 py-3 font-mono text-xs">{e.start_date}</td>
-                                                        <td className="px-4 py-3 font-mono text-xs">{e.finish_date}</td>
-                                                    </tr>
-                                                )) : <EmptyRow cols={4} message="No experience recorded." />}
+                                                {selected.workExperiences?.length > 0
+                                                    ? selected.workExperiences.map(ex => (
+                                                        <tr key={ex.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                                            <td className="px-4 py-3">{ex.position}</td>
+                                                            <td className="px-4 py-3">{ex.organization}</td>
+                                                            <td className="px-4 py-3 font-mono text-xs">{ex.start_date}</td>
+                                                            <td className="px-4 py-3 font-mono text-xs">{ex.finish_date}</td>
+                                                        </tr>
+                                                    ))
+                                                    : <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400 text-sm">No experience recorded.</td></tr>
+                                                }
                                             </tbody>
                                         </table>
                                     )}
-
                                     {tab === 'shifts' && (
                                         <table className="w-full text-sm">
                                             <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 uppercase text-xs">
@@ -328,21 +284,20 @@ export default function StaffManagement({ staff }: { staff: Staff[] }) {
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                                {selected.rotas?.length > 0 ? selected.rotas.map(r => (
-                                                    <tr key={r.rota_id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                                                        <td className="px-4 py-3">Ward {r.ward_number}</td>
-                                                        <td className="px-4 py-3 font-mono text-xs">{r.week_beginning}</td>
-                                                        <td className="px-4 py-3">
-                                                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                                                r.shift === 'Early' ? 'bg-teal-100 text-teal-700' :
-                                                                r.shift === 'Late'  ? 'bg-amber-100 text-amber-700' :
-                                                                'bg-purple-100 text-purple-700'
-                                                            }`}>
-                                                                {r.shift}
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                )) : <EmptyRow cols={3} message="No shift data." />}
+                                                {selected.rotas?.length > 0
+                                                    ? selected.rotas.map(r => (
+                                                        <tr key={r.rota_id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                                            <td className="px-4 py-3">Ward {r.ward_number}</td>
+                                                            <td className="px-4 py-3 font-mono text-xs">{r.week_beginning}</td>
+                                                            <td className="px-4 py-3">
+                                                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${r.shift === 'Early' ? 'bg-teal-100 text-teal-700' : r.shift === 'Late' ? 'bg-amber-100 text-amber-700' : 'bg-purple-100 text-purple-700'}`}>
+                                                                    {r.shift}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                    : <tr><td colSpan={3} className="px-4 py-8 text-center text-gray-400 text-sm">No shift data.</td></tr>
+                                                }
                                             </tbody>
                                         </table>
                                     )}
@@ -357,7 +312,7 @@ export default function StaffManagement({ staff }: { staff: Staff[] }) {
                 </div>
             </div>
 
-            {/* ── MODALS ── */}
+            {/* Modal */}
             {modal && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setModal(null)}>
                     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
@@ -367,141 +322,81 @@ export default function StaffManagement({ staff }: { staff: Staff[] }) {
                             </h3>
                             <button onClick={() => setModal(null)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
                         </div>
-
-                        {/* CREATE */}
                         {modal === 'create' && (
                             <form onSubmit={submitCreate} className="space-y-4">
-                                <Field label="Staff Number" error={createForm.errors.staff_number}>
-                                    <input value={createForm.data.staff_number} onChange={e => createForm.setData('staff_number', e.target.value)} className={inp} placeholder="e.g. S1001" />
+                                <Field label="Staff Number" error={errors.staff_number}>
+                                    <input value={createData.staff_number} onChange={e => setCreateData(p => ({...p, staff_number: e.target.value}))} className={inp} placeholder="e.g. S1001" />
                                 </Field>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <Field label="First Name" error={createForm.errors.first_name}>
-                                        <input value={createForm.data.first_name} onChange={e => createForm.setData('first_name', e.target.value)} className={inp} />
-                                    </Field>
-                                    <Field label="Last Name" error={createForm.errors.last_name}>
-                                        <input value={createForm.data.last_name} onChange={e => createForm.setData('last_name', e.target.value)} className={inp} />
-                                    </Field>
+                                    <Field label="First Name" error={errors.first_name}><input value={createData.first_name} onChange={e => setCreateData(p => ({...p, first_name: e.target.value}))} className={inp} /></Field>
+                                    <Field label="Last Name"  error={errors.last_name}> <input value={createData.last_name}  onChange={e => setCreateData(p => ({...p, last_name:  e.target.value}))} className={inp} /></Field>
                                 </div>
-                                <Field label="Address" error={createForm.errors.address}>
-                                    <textarea value={createForm.data.address} onChange={e => createForm.setData('address', e.target.value)} className={inp} rows={2} />
+                                <Field label="Address" error={errors.address}>
+                                    <textarea value={createData.address} onChange={e => setCreateData(p => ({...p, address: e.target.value}))} className={inp} rows={2} />
                                 </Field>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <Field label="Telephone" error={createForm.errors.telephone}>
-                                        <input value={createForm.data.telephone} onChange={e => createForm.setData('telephone', e.target.value)} className={inp} />
-                                    </Field>
-                                    <Field label="Date of Birth" error={createForm.errors.date_of_birth}>
-                                        <input type="date" value={createForm.data.date_of_birth} onChange={e => createForm.setData('date_of_birth', e.target.value)} className={inp} />
-                                    </Field>
+                                    <Field label="Telephone"    error={errors.telephone}>   <input value={createData.telephone}    onChange={e => setCreateData(p => ({...p, telephone:    e.target.value}))} className={inp} /></Field>
+                                    <Field label="Date of Birth" error={errors.date_of_birth}><input type="date" value={createData.date_of_birth} onChange={e => setCreateData(p => ({...p, date_of_birth: e.target.value}))} className={inp} /></Field>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <Field label="Sex" error={createForm.errors.sex}>
-                                        <select value={createForm.data.sex} onChange={e => createForm.setData('sex', e.target.value)} className={inp}>
-                                            <option>Male</option>
-                                            <option>Female</option>
-                                        </select>
+                                    <Field label="Sex" error={errors.sex}>
+                                        <select value={createData.sex} onChange={e => setCreateData(p => ({...p, sex: e.target.value}))} className={inp}><option>Male</option><option>Female</option></select>
                                     </Field>
-                                    <Field label="NIN" error={createForm.errors.nin}>
-                                        <input value={createForm.data.nin} onChange={e => createForm.setData('nin', e.target.value)} className={inp} />
-                                    </Field>
+                                    <Field label="NIN" error={errors.nin}><input value={createData.nin} onChange={e => setCreateData(p => ({...p, nin: e.target.value}))} className={inp} /></Field>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <Field label="Current Salary" error={createForm.errors.current_salary}>
-                                        <input type="number" value={createForm.data.current_salary} onChange={e => createForm.setData('current_salary', e.target.value)} className={inp} />
-                                    </Field>
-                                    <Field label="Salary Scale" error={createForm.errors.salary_scale}>
-                                        <input value={createForm.data.salary_scale} onChange={e => createForm.setData('salary_scale', e.target.value)} className={inp} />
-                                    </Field>
+                                    <Field label="Current Salary" error={errors.current_salary}><input type="number" value={createData.current_salary} onChange={e => setCreateData(p => ({...p, current_salary: e.target.value}))} className={inp} /></Field>
+                                    <Field label="Salary Scale"   error={errors.salary_scale}>  <input value={createData.salary_scale}   onChange={e => setCreateData(p => ({...p, salary_scale:   e.target.value}))} className={inp} /></Field>
                                 </div>
                                 <div className="grid grid-cols-3 gap-4">
-                                    <Field label="Pay Type" error={createForm.errors.pay_type}>
-                                        <select value={createForm.data.pay_type} onChange={e => createForm.setData('pay_type', e.target.value)} className={inp}>
-                                            <option>Monthly</option>
-                                            <option>Weekly</option>
-                                        </select>
+                                    <Field label="Pay Type" error={errors.pay_type}>
+                                        <select value={createData.pay_type} onChange={e => setCreateData(p => ({...p, pay_type: e.target.value}))} className={inp}><option>Monthly</option><option>Weekly</option></select>
                                     </Field>
-                                    <Field label="Hours/Week" error={createForm.errors.hours_per_week}>
-                                        <input type="number" value={createForm.data.hours_per_week} onChange={e => createForm.setData('hours_per_week', e.target.value)} className={inp} />
-                                    </Field>
-                                    <Field label="Contract Type" error={createForm.errors.contract_type}>
-                                        <select value={createForm.data.contract_type} onChange={e => createForm.setData('contract_type', e.target.value)} className={inp}>
-                                            <option>Permanent</option>
-                                            <option>Temporary</option>
-                                        </select>
+                                    <Field label="Hours/Week" error={errors.hours_per_week}><input type="number" value={createData.hours_per_week} onChange={e => setCreateData(p => ({...p, hours_per_week: e.target.value}))} className={inp} /></Field>
+                                    <Field label="Contract Type" error={errors.contract_type}>
+                                        <select value={createData.contract_type} onChange={e => setCreateData(p => ({...p, contract_type: e.target.value}))} className={inp}><option>Permanent</option><option>Temporary</option></select>
                                     </Field>
                                 </div>
                                 <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
-                                    <button type="submit" disabled={createForm.processing}
-                                        className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">
-                                        {createForm.processing ? 'Saving…' : '✓ Add Staff'}
-                                    </button>
+                                    <button type="submit" disabled={processing} className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">{processing ? 'Saving…' : '✓ Add Staff'}</button>
                                     <button type="button" onClick={() => setModal(null)} className="px-5 py-2 text-sm text-gray-600 dark:text-gray-400 hover:underline">Cancel</button>
                                 </div>
                             </form>
                         )}
-
-                        {/* EDIT */}
                         {modal === 'edit' && (
                             <form onSubmit={submitEdit} className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <Field label="First Name" error={editForm.errors.first_name}>
-                                        <input value={editForm.data.first_name} onChange={e => editForm.setData('first_name', e.target.value)} className={inp} />
-                                    </Field>
-                                    <Field label="Last Name" error={editForm.errors.last_name}>
-                                        <input value={editForm.data.last_name} onChange={e => editForm.setData('last_name', e.target.value)} className={inp} />
-                                    </Field>
+                                    <Field label="First Name" error={errors.first_name}><input value={editData.first_name} onChange={e => setEditData(p => ({...p, first_name: e.target.value}))} className={inp} /></Field>
+                                    <Field label="Last Name"  error={errors.last_name}> <input value={editData.last_name}  onChange={e => setEditData(p => ({...p, last_name:  e.target.value}))} className={inp} /></Field>
                                 </div>
-                                <Field label="Address" error={editForm.errors.address}>
-                                    <textarea value={editForm.data.address} onChange={e => editForm.setData('address', e.target.value)} className={inp} rows={2} />
+                                <Field label="Address" error={errors.address}>
+                                    <textarea value={editData.address} onChange={e => setEditData(p => ({...p, address: e.target.value}))} className={inp} rows={2} />
                                 </Field>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <Field label="Telephone" error={editForm.errors.telephone}>
-                                        <input value={editForm.data.telephone} onChange={e => editForm.setData('telephone', e.target.value)} className={inp} />
-                                    </Field>
-                                    <Field label="Date of Birth" error={editForm.errors.date_of_birth}>
-                                        <input type="date" value={editForm.data.date_of_birth} onChange={e => editForm.setData('date_of_birth', e.target.value)} className={inp} />
-                                    </Field>
+                                    <Field label="Telephone"    error={errors.telephone}>    <input value={editData.telephone}    onChange={e => setEditData(p => ({...p, telephone:    e.target.value}))} className={inp} /></Field>
+                                    <Field label="Date of Birth" error={errors.date_of_birth}><input type="date" value={editData.date_of_birth} onChange={e => setEditData(p => ({...p, date_of_birth: e.target.value}))} className={inp} /></Field>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <Field label="Sex" error={editForm.errors.sex}>
-                                        <select value={editForm.data.sex} onChange={e => editForm.setData('sex', e.target.value)} className={inp}>
-                                            <option>Male</option>
-                                            <option>Female</option>
-                                        </select>
+                                    <Field label="Sex" error={errors.sex}>
+                                        <select value={editData.sex} onChange={e => setEditData(p => ({...p, sex: e.target.value}))} className={inp}><option>Male</option><option>Female</option></select>
                                     </Field>
-                                    <Field label="NIN" error={editForm.errors.nin}>
-                                        <input value={editForm.data.nin} onChange={e => editForm.setData('nin', e.target.value)} className={inp} />
-                                    </Field>
+                                    <Field label="NIN" error={errors.nin}><input value={editData.nin} onChange={e => setEditData(p => ({...p, nin: e.target.value}))} className={inp} /></Field>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <Field label="Current Salary" error={editForm.errors.current_salary}>
-                                        <input type="number" value={editForm.data.current_salary} onChange={e => editForm.setData('current_salary', e.target.value)} className={inp} />
-                                    </Field>
-                                    <Field label="Salary Scale" error={editForm.errors.salary_scale}>
-                                        <input value={editForm.data.salary_scale} onChange={e => editForm.setData('salary_scale', e.target.value)} className={inp} />
-                                    </Field>
+                                    <Field label="Current Salary" error={errors.current_salary}><input type="number" value={editData.current_salary} onChange={e => setEditData(p => ({...p, current_salary: e.target.value}))} className={inp} /></Field>
+                                    <Field label="Salary Scale"   error={errors.salary_scale}>  <input value={editData.salary_scale}   onChange={e => setEditData(p => ({...p, salary_scale:   e.target.value}))} className={inp} /></Field>
                                 </div>
                                 <div className="grid grid-cols-3 gap-4">
-                                    <Field label="Pay Type" error={editForm.errors.pay_type}>
-                                        <select value={editForm.data.pay_type} onChange={e => editForm.setData('pay_type', e.target.value)} className={inp}>
-                                            <option>Monthly</option>
-                                            <option>Weekly</option>
-                                        </select>
+                                    <Field label="Pay Type" error={errors.pay_type}>
+                                        <select value={editData.pay_type} onChange={e => setEditData(p => ({...p, pay_type: e.target.value}))} className={inp}><option>Monthly</option><option>Weekly</option></select>
                                     </Field>
-                                    <Field label="Hours/Week" error={editForm.errors.hours_per_week}>
-                                        <input type="number" value={editForm.data.hours_per_week} onChange={e => editForm.setData('hours_per_week', e.target.value)} className={inp} />
-                                    </Field>
-                                    <Field label="Contract Type" error={editForm.errors.contract_type}>
-                                        <select value={editForm.data.contract_type} onChange={e => editForm.setData('contract_type', e.target.value)} className={inp}>
-                                            <option>Permanent</option>
-                                            <option>Temporary</option>
-                                        </select>
+                                    <Field label="Hours/Week" error={errors.hours_per_week}><input type="number" value={editData.hours_per_week} onChange={e => setEditData(p => ({...p, hours_per_week: e.target.value}))} className={inp} /></Field>
+                                    <Field label="Contract Type" error={errors.contract_type}>
+                                        <select value={editData.contract_type} onChange={e => setEditData(p => ({...p, contract_type: e.target.value}))} className={inp}><option>Permanent</option><option>Temporary</option></select>
                                     </Field>
                                 </div>
                                 <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
-                                    <button type="submit" disabled={editForm.processing}
-                                        className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">
-                                        {editForm.processing ? 'Saving…' : 'Save Changes'}
-                                    </button>
+                                    <button type="submit" disabled={processing} className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">{processing ? 'Saving…' : 'Save Changes'}</button>
                                     <button type="button" onClick={() => setModal(null)} className="px-5 py-2 text-sm text-gray-600 dark:text-gray-400 hover:underline">Cancel</button>
                                 </div>
                             </form>
@@ -534,14 +429,6 @@ function Detail({ label, value }: { label: string; value: string }) {
             <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{label}</p>
             <p className="text-gray-800 dark:text-gray-100 font-medium mt-0.5">{value || '—'}</p>
         </div>
-    );
-}
-
-function EmptyRow({ cols, message }: { cols: number; message: string }) {
-    return (
-        <tr>
-            <td colSpan={cols} className="px-4 py-8 text-center text-gray-400 text-sm">{message}</td>
-        </tr>
     );
 }
 

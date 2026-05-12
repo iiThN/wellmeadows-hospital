@@ -5,7 +5,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Patient extends Model
 {
-    protected $table = 'patient';
+    protected $table = 'patients';
     protected $primaryKey = 'patient_number';
     public $incrementing = false;
     protected $keyType = 'string';
@@ -16,14 +16,33 @@ class Patient extends Model
         'date_registered', 'clinic_number',
     ];
 
+    // Active admission only
     public function inpatient()
     {
-        return $this->hasOne(Inpatient::class, 'patient_number', 'patient_number');
+        return $this->hasOne(Inpatient::class, 'patient_number', 'patient_number')
+                    ->whereNull('actual_leave_date')
+                    ->latest('date_placed');
     }
 
+    public function inpatientHistory()
+    {
+        return $this->hasMany(Inpatient::class, 'patient_number', 'patient_number')
+                    ->orderByDesc('date_placed');
+    }
+
+
+    // Most recent outpatient visit
     public function outpatient()
     {
-        return $this->hasOne(Outpatient::class, 'patient_number', 'patient_number');
+        return $this->hasOne(Outpatient::class, 'patient_number', 'patient_number')
+                    ->latest('appointment_date');
+    }
+
+    // All outpatient visits — for history
+    public function outpatientHistory()
+    {
+        return $this->hasMany(Outpatient::class, 'patient_number', 'patient_number')
+                    ->orderByDesc('appointment_date');
     }
 
     public function nextOfKin()

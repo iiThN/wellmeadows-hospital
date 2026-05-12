@@ -1,5 +1,4 @@
 import AppLayout from '@/layouts/app-layout';
-import { Head } from '@inertiajs/react';
 import { type BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -13,7 +12,6 @@ interface Props {
 export default function Dashboard({ stats }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Personnel Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <h2 className="text-xl font-semibold">Personnel Dashboard</h2>
                 <div className="grid gap-4 md:grid-cols-2">

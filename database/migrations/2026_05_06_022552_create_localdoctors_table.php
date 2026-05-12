@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('localdoctors', function (Blueprint $table) {
+        Schema::create('localdoctor', function (Blueprint $table) {
             $table->string('clinic_number')->primary();
             $table->string('full_name');
             $table->text('address');
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('localdoctors');
+        Schema::dropIfExists('localdoctor');
     }
 };

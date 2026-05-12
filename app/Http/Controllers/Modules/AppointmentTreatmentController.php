@@ -2,7 +2,6 @@
 namespace App\Http\Controllers\Modules;
 
 use App\Http\Controllers\Controller;
-use Inertia\Inertia;
 use App\Models\Appointment;
 use App\Models\Treatment;
 use App\Models\Patient;
@@ -20,7 +19,7 @@ class AppointmentTreatmentController extends Controller
             ->get();
 
         $patients    = Patient::orderBy('last_name')->get(['patient_number', 'first_name', 'last_name']);
-        $outpatients = Outpatient::with('patient')->get();
+        $outpatients = Outpatient::select('patient_number', 'appointment_date', 'appointment_time')->get();
 
         $consultantNumbers = StaffPosition::where('position_title', 'Consultant')
             ->whereNull('end_date')
@@ -28,7 +27,7 @@ class AppointmentTreatmentController extends Controller
         $consultants = Staff::whereIn('staff_number', $consultantNumbers)
             ->get(['staff_number', 'first_name', 'last_name']);
 
-        return Inertia::render('modules/appointment-treatment/index', [
+        return response()->json([
             'appointments' => $appointments,
             'patients'     => $patients,
             'consultants'  => $consultants,
@@ -40,8 +39,8 @@ class AppointmentTreatmentController extends Controller
     public function appointmentStore(Request $request)
     {
         $validated = $request->validate([
-            'appointment_number' => 'required|string|unique:appointment,appointment_number',
-            'patient_number'     => 'required|string|exists:patient,patient_number',
+            'appointment_number' => 'required|string|unique:appointments,appointment_number',
+            'patient_number'     => 'required|string|exists:patients,patient_number',
             'consultant_number'  => 'required|string|exists:staff,staff_number',
             'appointment_date'   => 'required|date',
             'appointment_time'   => 'nullable|string',
@@ -53,7 +52,7 @@ class AppointmentTreatmentController extends Controller
             'outcome' => 'Pending', // default until examination
         ]);
 
-        return back()->with('success', 'Appointment created.');
+        return response()->json(['message' => 'Appointment created.']);
     }
 
     // Update appointment
@@ -70,14 +69,14 @@ class AppointmentTreatmentController extends Controller
         ]);
 
         $appointment->update($validated);
-        return back()->with('success', 'Appointment updated.');
+        return response()->json(['message' => 'Appointment updated.']);
     }
 
     // Delete appointment
     public function appointmentDestroy(string $id)
     {
         Appointment::findOrFail($id)->delete();
-        return back()->with('success', 'Appointment deleted.');
+        return response()->json(['message' => 'Appointment deleted.']);
     }
 
     // Record treatment
@@ -100,14 +99,14 @@ class AppointmentTreatmentController extends Controller
             ]
         );
 
-        return back()->with('success', 'Treatment recorded.');
+        return response()->json(['message' => 'Treatment recorded.']);
     }
 
     // Delete treatment
     public function treatmentDestroy(string $appointmentNumber)
     {
         Treatment::where('appointment_number', $appointmentNumber)->delete();
-        return back()->with('success', 'Treatment deleted.');
+        return response()->json(['message' => 'Treatment deleted.']);
     }
 
     // (f) Outpatient clinic report

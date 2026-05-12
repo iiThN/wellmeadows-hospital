@@ -5,7 +5,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Ward extends Model
 {
-    protected $table = 'ward';
+    protected $table = 'wards';
     protected $primaryKey = 'ward_number';
     public $incrementing = false;
     protected $keyType = 'int';

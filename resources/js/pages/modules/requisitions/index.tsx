@@ -1,29 +1,12 @@
 import AppLayout from '@/layouts/app-layout';
-import { useForm, router } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import axios from 'axios';
+import { useFetch } from '@/hooks/useFetch';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Requisitions', href: '/modules/requisitions' },
 ];
-
-interface Supply {
-    item_number: string;
-    item_name: string;
-    item_description: string;
-    supply_type: string;
-    quantity_in_stock: number;
-    reorder_level: number;
-    cost_per_unit: number;
-}
-
-interface Drug {
-    drug_number: string;
-    drug_name: string;
-    dosage: string;
-    cost_per_unit: number;
-}
 
 interface ReqItem {
     req_item_id: number;
@@ -42,29 +25,48 @@ interface Requisition {
     staff_number: string;
     items: ReqItem[];
 }
-interface Ward { ward_number: number; ward_name: string }
 
 const EMPTY_ITEM = { type: 'supply', item_number: '', drug_number: '', quantity: '', cost: '' };
 
-export default function RequisitionsPage({
-    requisitions, supplies, drugs, wards
-}: {
-    requisitions: Requisition[];
-    supplies: Supply[];
-    drugs: Drug[];
-    wards: Ward[];
-}) {
-    const [modal, setModal]         = useState(false);
-    const [selected, setSelected]   = useState<Requisition | null>(null);
-    const [search, setSearch]       = useState('');
-    const [items, setItems]         = useState([{ ...EMPTY_ITEM }]);
+const initialData = {
+    requisitions: [] as any[],
+    supplies:     [] as any[],
+    drugs:        [] as any[],
+    wards:        [] as any[],
+};
 
-    useEffect(() => { setModal(false); }, []);
+export default function RequisitionsPage() {
+    const { data, loading } = useFetch('/api/modules/requisitions', initialData);
 
-    const form = useForm({
-        ward_number: '',
-        items: [] as any[],
-    });
+    const [requisitions, setRequisitions] = useState<any[]>([]);
+    const [supplies, setSupplies]         = useState<any[]>([]);
+    const [drugs, setDrugs]               = useState<any[]>([]);
+    const [wards, setWards]               = useState<any[]>([]);
+
+    useEffect(() => {
+        if (data.requisitions) setRequisitions(data.requisitions);
+        if (data.supplies)     setSupplies(data.supplies);
+        if (data.drugs)        setDrugs(data.drugs);
+        if (data.wards)        setWards(data.wards);
+    }, [data]);
+
+    const reloadData = useCallback(() => {
+        axios.get('/api/modules/requisitions').then(r => {
+            if (r.data.requisitions !== undefined) setRequisitions(r.data.requisitions);
+            if (r.data.supplies     !== undefined) setSupplies(r.data.supplies);
+            if (r.data.drugs        !== undefined) setDrugs(r.data.drugs);
+            if (r.data.wards        !== undefined) setWards(r.data.wards);
+        });
+    }, []);
+
+    const [modal, setModal]       = useState(false);
+    const [selected, setSelected] = useState<Requisition | null>(null);
+    const [search, setSearch]     = useState('');
+    const [items, setItems]       = useState([{ ...EMPTY_ITEM }]);
+
+    const [formData, setFormData]             = useState({ ward_number: '' });
+    const [formErrors, setFormErrors]         = useState<Record<string, string>>({});
+    const [formProcessing, setFormProcessing] = useState(false);
 
     function addItem() { setItems(i => [...i, { ...EMPTY_ITEM }]); }
     function removeItem(i: number) { setItems(items => items.filter((_, idx) => idx !== i)); }
@@ -81,50 +83,77 @@ export default function RequisitionsPage({
         }
     }
 
-    function submitReq(e: React.FormEvent) {
+    async function submitReq(e: React.FormEvent) {
         e.preventDefault();
-        form.setData('items', items);
-        form.post('/modules/requisitions', {
-            preserveScroll: true,
-            onSuccess: () => {
-                setModal(false);
-                form.reset();
-                setItems([{ ...EMPTY_ITEM }]);
-            },
-        });
+        setFormProcessing(true);
+        setFormErrors({});
+        try {
+            await axios.post('/api/modules/requisitions', { ward_number: formData.ward_number, items });
+            setModal(false);
+            setFormData({ ward_number: '' });
+            setItems([{ ...EMPTY_ITEM }]);
+            reloadData();
+        } catch (err: any) {
+            const d = err?.response?.data?.errors ?? {};
+            const f: Record<string, string> = {};
+            Object.entries(d).forEach(([k, v]) => f[k] = (v as string[])[0]);
+            setFormErrors(f);
+        } finally {
+            setFormProcessing(false);
+        }
     }
 
-    const filtered = requisitions.filter(r =>
+    const filtered      = requisitions.filter(r =>
         r.requisition_number.toLowerCase().includes(search.toLowerCase()) ||
         String(r.ward_number).includes(search)
     );
-
     const selectedItems = selected?.items ?? [];
     const selectedTotal = selectedItems.reduce((a, i) => a + i.quantity_required * Number(i.cost_per_unit), 0);
 
+    const SkeletonRow = ({ cols }: { cols: number }) => (
+        <>
+            {Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i}>
+                    {Array.from({ length: cols }).map((_, j) => (
+                        <td key={j} className="px-4 py-3">
+                            <div className="h-4 rounded bg-gray-100 animate-pulse" />
+                        </td>
+                    ))}
+                </tr>
+            ))}
+        </>
+    );
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Requisitions" />
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
 
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Supplies & Requisitions</h2>
-                    <button onClick={() => setModal(true)}
-                        className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+                    <button onClick={() => setModal(true)} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
                         + New Requisition
                     </button>
                 </div>
 
-                {/* Stats */}
                 <div className="grid grid-cols-4 gap-4">
-                    <StatCard label="Surgical Items" value={supplies.filter(s => s.supply_type === 'Surgical').length} color="teal" />
-                    <StatCard label="Pharmaceutical" value={drugs.length} color="blue" />
-                    <StatCard label="Total Requisitions" value={requisitions.length} color="purple" />
-                    <StatCard label="Pending" value={requisitions.filter(r => !r.signed_date).length} color="amber" />
+                    {loading ? (
+                        Array.from({ length: 4 }).map((_, i) => (
+                            <div key={i} className="rounded-xl p-4 border border-gray-100 bg-gray-50">
+                                <div className="h-3 w-24 rounded bg-gray-200 animate-pulse mb-2" />
+                                <div className="h-7 w-12 rounded bg-gray-200 animate-pulse" />
+                            </div>
+                        ))
+                    ) : (
+                        <>
+                            <StatCard label="Surgical Items"     value={supplies.filter(s => s.supply_type === 'Surgical').length} color="teal" />
+                            <StatCard label="Pharmaceutical"     value={drugs.length} color="blue" />
+                            <StatCard label="Total Requisitions" value={requisitions.length} color="purple" />
+                            <StatCard label="Pending"            value={requisitions.filter(r => !r.signed_date).length} color="amber" />
+                        </>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-6 items-start">
-                    {/* Requisitions list */}
                     <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                         <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Requisitions ({filtered.length})</p>
@@ -141,24 +170,27 @@ export default function RequisitionsPage({
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                {filtered.map(r => (
-                                    <tr key={r.requisition_number}
-                                        onClick={() => setSelected(selected?.requisition_number === r.requisition_number ? null : r)}
-                                        className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 ${selected?.requisition_number === r.requisition_number ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}>
-                                        <td className="px-4 py-3 font-mono text-xs">{r.requisition_number}</td>
-                                        <td className="px-4 py-3">Ward {r.ward_number}</td>
-                                        <td className="px-4 py-3 font-mono text-xs">{r.requisition_date}</td>
-                                        <td className="px-4 py-3">{r.items?.length ?? 0} items</td>
-                                    </tr>
-                                ))}
-                                {filtered.length === 0 && (
-                                    <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400 text-sm">No requisitions found.</td></tr>
+                                {loading ? <SkeletonRow cols={4} /> : (
+                                    <>
+                                        {filtered.map(r => (
+                                            <tr key={r.requisition_number}
+                                                onClick={() => setSelected(selected?.requisition_number === r.requisition_number ? null : r)}
+                                                className={`cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 ${selected?.requisition_number === r.requisition_number ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}>
+                                                <td className="px-4 py-3 font-mono text-xs">{r.requisition_number}</td>
+                                                <td className="px-4 py-3">Ward {r.ward_number}</td>
+                                                <td className="px-4 py-3 font-mono text-xs">{r.requisition_date}</td>
+                                                <td className="px-4 py-3">{r.items?.length ?? 0} items</td>
+                                            </tr>
+                                        ))}
+                                        {filtered.length === 0 && (
+                                            <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400 text-sm">No requisitions found.</td></tr>
+                                        )}
+                                    </>
                                 )}
                             </tbody>
                         </table>
                     </div>
 
-                    {/* Requisition detail */}
                     {selected ? (
                         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                             <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -194,7 +226,7 @@ export default function RequisitionsPage({
                                         );
                                     })}
                                 </tbody>
-                            </table>
+            </table>
                             <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end">
                                 <span className="text-sm text-gray-500 dark:text-gray-400 mr-2">Total:</span>
                                 <span className="font-semibold">£{selectedTotal.toFixed(2)}</span>
@@ -208,7 +240,6 @@ export default function RequisitionsPage({
                 </div>
             </div>
 
-            {/* Modal */}
             {modal && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setModal(false)}>
                     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
@@ -216,15 +247,13 @@ export default function RequisitionsPage({
                             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">New Requisition</h3>
                             <button onClick={() => setModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
                         </div>
-
                         <form onSubmit={submitReq} className="space-y-4">
-                            <Field label="Ward" error={form.errors.ward_number}>
-                                <select value={form.data.ward_number} onChange={e => form.setData('ward_number', e.target.value)} className={inp}>
+                            <Field label="Ward" error={formErrors.ward_number}>
+                                <select value={formData.ward_number} onChange={e => setFormData(p => ({...p, ward_number: e.target.value}))} className={inp}>
                                     <option value="">— Select ward —</option>
                                     {wards.map(w => <option key={w.ward_number} value={w.ward_number}>Ward {w.ward_number} — {w.ward_name}</option>)}
                                 </select>
                             </Field>
-
                             <div>
                                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Items to Order</p>
                                 {items.map((item, i) => (
@@ -275,18 +304,16 @@ export default function RequisitionsPage({
                                 ))}
                                 <button type="button" onClick={addItem} className="text-sm text-blue-600 hover:underline">+ Add item</button>
                             </div>
-
                             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg px-4 py-3 flex justify-between items-center">
                                 <span className="text-sm text-gray-600 dark:text-gray-400">Order total:</span>
                                 <span className="font-semibold font-mono">
                                     £{items.reduce((a, i) => a + (parseFloat(i.quantity) || 0) * (parseFloat(i.cost) || 0), 0).toFixed(2)}
                                 </span>
                             </div>
-
                             <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
-                                <button type="submit" disabled={form.processing}
+                                <button type="submit" disabled={formProcessing}
                                     className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">
-                                    {form.processing ? 'Submitting…' : '✓ Submit Requisition'}
+                                    {formProcessing ? 'Submitting…' : '✓ Submit Requisition'}
                                 </button>
                                 <button type="button" onClick={() => setModal(false)} className="px-5 py-2 text-sm text-gray-600 dark:text-gray-400 hover:underline">Cancel</button>
                             </div>

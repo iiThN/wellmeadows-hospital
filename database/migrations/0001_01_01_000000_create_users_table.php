@@ -19,9 +19,8 @@ return new class extends Migration
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();
-            $table->string('role')->default('staff'); // personnel_officer, charge_nurse, medical_director, staff
-            $table->string('staff_number')->nullable();
-            $table->foreign('staff_number')->references('staff_number')->on('staff')->nullOnDelete();
+            $table->string('role')->default('staff');
+            $table->string('staff_number')->nullable(); // FK added after staff table in a later migration
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

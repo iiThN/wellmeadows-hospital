@@ -20,7 +20,7 @@ return new class extends Migration
             $table->integer('reorder_level');
             $table->decimal('cost_per_unit', 10, 2);
             $table->string('supplier_number');
-            $table->foreign('supplier_number')->references('supplier_number')->on('suppliers')->onDelete('cascade');
+            $table->foreign('supplier_number')->references('supplier_number')->on('supplier')->onDelete('cascade');
             $table->timestamps();
         });
     }

@@ -1,6 +1,7 @@
-import { Head, useForm } from '@inertiajs/react';
+import { useState, FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { LoaderCircle } from 'lucide-react';
-import { FormEventHandler } from 'react';
 
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
@@ -9,31 +10,47 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
 
-interface RegisterForm {
-    name: string;
-    email: string;
-    password: string;
-    password_confirmation: string;
-}
-
 export default function Register() {
-    const { data, setData, post, processing, errors, reset } = useForm<RegisterForm>({
-        name: '',
-        email: '',
-        password: '',
-        password_confirmation: '',
-    });
+    const navigate = useNavigate();
+    const [name, setName]                         = useState('');
+    const [email, setEmail]                       = useState('');
+    const [password, setPassword]                 = useState('');
+    const [passwordConfirmation, setPasswordConf] = useState('');
+    const [processing, setProcessing]             = useState(false);
+    const [errors, setErrors]                     = useState<Record<string, string>>({});
 
-    const submit: FormEventHandler = (e) => {
+    const submit = async (e: FormEvent) => {
         e.preventDefault();
-        post(route('register'), {
-            onFinish: () => reset('password', 'password_confirmation'),
-        });
+        setProcessing(true);
+        setErrors({});
+        try {
+            await axios.post('/register', {
+                name,
+                email,
+                password,
+                password_confirmation: passwordConfirmation,
+            });
+            navigate('/');
+        } catch (err: any) {
+            const data = err?.response?.data?.errors;
+            if (data) {
+                const flat: Record<string, string> = {};
+                for (const [k, msgs] of Object.entries(data as Record<string, string[]>)) {
+                    flat[k] = msgs[0];
+                }
+                setErrors(flat);
+            } else {
+                setErrors({ name: err?.response?.data?.message ?? 'Registration failed.' });
+            }
+            setPassword('');
+            setPasswordConf('');
+        } finally {
+            setProcessing(false);
+        }
     };
 
     return (
         <AuthLayout title="Create an account" description="Enter your details below to create your account">
-            <Head title="Register" />
             <form className="flex flex-col gap-6" onSubmit={submit}>
                 <div className="grid gap-6">
                     <div className="grid gap-2">
@@ -45,8 +62,8 @@ export default function Register() {
                             autoFocus
                             tabIndex={1}
                             autoComplete="name"
-                            value={data.name}
-                            onChange={(e) => setData('name', e.target.value)}
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
                             disabled={processing}
                             placeholder="Full name"
                         />
@@ -61,8 +78,8 @@ export default function Register() {
                             required
                             tabIndex={2}
                             autoComplete="email"
-                            value={data.email}
-                            onChange={(e) => setData('email', e.target.value)}
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             disabled={processing}
                             placeholder="email@example.com"
                         />
@@ -77,8 +94,8 @@ export default function Register() {
                             required
                             tabIndex={3}
                             autoComplete="new-password"
-                            value={data.password}
-                            onChange={(e) => setData('password', e.target.value)}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                             disabled={processing}
                             placeholder="Password"
                         />
@@ -93,8 +110,8 @@ export default function Register() {
                             required
                             tabIndex={4}
                             autoComplete="new-password"
-                            value={data.password_confirmation}
-                            onChange={(e) => setData('password_confirmation', e.target.value)}
+                            value={passwordConfirmation}
+                            onChange={(e) => setPasswordConf(e.target.value)}
                             disabled={processing}
                             placeholder="Confirm password"
                         />
@@ -109,7 +126,7 @@ export default function Register() {
 
                 <div className="text-muted-foreground text-center text-sm">
                     Already have an account?{' '}
-                    <TextLink href={route('login')} tabIndex={6}>
+                    <TextLink to="/login" tabIndex={6}>
                         Log in
                     </TextLink>
                 </div>

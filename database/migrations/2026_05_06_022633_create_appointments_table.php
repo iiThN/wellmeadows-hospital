@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('appointments', function (Blueprint $table) {
+        Schema::create('appointment', function (Blueprint $table) {
             $table->string('appointment_number')->primary();
             $table->date('appointment_date');
             $table->time('appointment_time');
@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('outcome')->nullable();
             $table->string('patient_number');
             $table->string('consultant_number');
-            $table->foreign('patient_number')->references('patient_number')->on('patients')->onDelete('cascade');
+            $table->foreign('patient_number')->references('patient_number')->on('patient')->onDelete('cascade');
             $table->foreign('consultant_number')->references('staff_number')->on('staff')->onDelete('cascade');
             $table->timestamps();
         });
@@ -30,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('appointments');
+        Schema::dropIfExists('appointment');
     }
 };

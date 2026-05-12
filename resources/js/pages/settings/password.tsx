@@ -1,127 +1,72 @@
-import InputError from '@/components/input-error';
+import { useState, FormEvent } from 'react';
+import axios from 'axios';
 import AppLayout from '@/layouts/app-layout';
-import SettingsLayout from '@/layouts/settings/layout';
-import { type BreadcrumbItem } from '@/types';
-import { Transition } from '@headlessui/react';
-import { Head, useForm } from '@inertiajs/react';
-import { FormEventHandler, useRef } from 'react';
-
-import HeadingSmall from '@/components/heading-small';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { type BreadcrumbItem } from '@/types';
+import SettingsLayout from '@/layouts/settings/layout';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Password settings',
-        href: '/settings/password',
-    },
+    { title: 'Settings', href: '/settings' },
+    { title: 'Password', href: '/settings/password' },
 ];
 
-export default function Password() {
-    const passwordInput = useRef<HTMLInputElement>(null);
-    const currentPasswordInput = useRef<HTMLInputElement>(null);
+export default function PasswordSettings() {
+    const [current, setCurrent]   = useState('');
+    const [password, setPassword] = useState('');
+    const [confirm, setConfirm]   = useState('');
+    const [status, setStatus]     = useState('');
+    const [errors, setErrors]     = useState<Record<string, string>>({});
+    const [processing, setProcessing] = useState(false);
 
-    const { data, setData, errors, put, reset, processing, recentlySuccessful } = useForm({
-        current_password: '',
-        password: '',
-        password_confirmation: '',
-    });
-
-    const updatePassword: FormEventHandler = (e) => {
+    const submit = async (e: FormEvent) => {
         e.preventDefault();
-
-        put(route('password.update'), {
-            preserveScroll: true,
-            onSuccess: () => reset(),
-            onError: (errors) => {
-                if (errors.password) {
-                    reset('password', 'password_confirmation');
-                    passwordInput.current?.focus();
-                }
-
-                if (errors.current_password) {
-                    reset('current_password');
-                    currentPasswordInput.current?.focus();
-                }
-            },
-        });
+        setProcessing(true); setErrors({}); setStatus('');
+        try {
+            await axios.put('/settings/password', {
+                current_password: current,
+                password,
+                password_confirmation: confirm,
+            });
+            setStatus('Password updated.');
+            setCurrent(''); setPassword(''); setConfirm('');
+        } catch (err: any) {
+            const d = err?.response?.data?.errors ?? {};
+            const f: Record<string, string> = {};
+            Object.entries(d).forEach(([k, v]) => f[k] = (v as string[])[0]);
+            setErrors(f);
+        } finally {
+            setProcessing(false);
+        }
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Profile settings" />
-
             <SettingsLayout>
-                <div className="space-y-6">
-                    <HeadingSmall title="Update password" description="Ensure your account is using a long, random password to stay secure" />
-
-                    <form onSubmit={updatePassword} className="space-y-6">
-                        <div className="grid gap-2">
-                            <Label htmlFor="current_password">Current password</Label>
-
-                            <Input
-                                id="current_password"
-                                ref={currentPasswordInput}
-                                value={data.current_password}
-                                onChange={(e) => setData('current_password', e.target.value)}
-                                type="password"
-                                className="mt-1 block w-full"
-                                autoComplete="current-password"
-                                placeholder="Current password"
-                            />
-
-                            <InputError message={errors.current_password} />
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="password">New password</Label>
-
-                            <Input
-                                id="password"
-                                ref={passwordInput}
-                                value={data.password}
-                                onChange={(e) => setData('password', e.target.value)}
-                                type="password"
-                                className="mt-1 block w-full"
-                                autoComplete="new-password"
-                                placeholder="New password"
-                            />
-
-                            <InputError message={errors.password} />
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="password_confirmation">Confirm password</Label>
-
-                            <Input
-                                id="password_confirmation"
-                                value={data.password_confirmation}
-                                onChange={(e) => setData('password_confirmation', e.target.value)}
-                                type="password"
-                                className="mt-1 block w-full"
-                                autoComplete="new-password"
-                                placeholder="Confirm password"
-                            />
-
-                            <InputError message={errors.password_confirmation} />
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                            <Button disabled={processing}>Save password</Button>
-
-                            <Transition
-                                show={recentlySuccessful}
-                                enter="transition ease-in-out"
-                                enterFrom="opacity-0"
-                                leave="transition ease-in-out"
-                                leaveTo="opacity-0"
-                            >
-                                <p className="text-sm text-neutral-600">Saved</p>
-                            </Transition>
-                        </div>
-                    </form>
-                </div>
+            <div className="max-w-md">
+                <h2 className="text-xl font-semibold mb-6">Change Password</h2>
+                {status && <div className="mb-4 text-sm text-green-600">{status}</div>}
+                <form onSubmit={submit} className="space-y-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="current_password">Current Password</Label>
+                        <Input id="current_password" type="password" value={current} onChange={e => setCurrent(e.target.value)} required />
+                        {errors.current_password && <p className="text-xs text-red-500">{errors.current_password}</p>}
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="password">New Password</Label>
+                        <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+                        {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="password_confirmation">Confirm New Password</Label>
+                        <Input id="password_confirmation" type="password" value={confirm} onChange={e => setConfirm(e.target.value)} required />
+                    </div>
+                    <Button type="submit" disabled={processing}>
+                        {processing ? 'Saving…' : 'Update password'}
+                    </Button>
+                </form>
+            </div>
             </SettingsLayout>
         </AppLayout>
     );

@@ -11,14 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('staffrotas', function (Blueprint $table) {
+        Schema::create('staffrota', function (Blueprint $table) {
             $table->id('rota_id');
             $table->date('week_beginning');
             $table->string('shift');
             $table->string('staff_number');
             $table->integer('ward_number');
             $table->foreign('staff_number')->references('staff_number')->on('staff')->onDelete('cascade');
-            $table->foreign('ward_number')->references('ward_number')->on('wards')->onDelete('cascade');
+            $table->foreign('ward_number')->references('ward_number')->on('ward')->onDelete('cascade');
             $table->timestamps();
         });
     }
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('staffrotas');
+        Schema::dropIfExists('staffrota');
     }
 };

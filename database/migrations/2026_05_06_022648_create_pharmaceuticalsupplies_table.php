@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('pharmaceuticalsupplies', function (Blueprint $table) {
+        Schema::create('pharmaceuticalsupply', function (Blueprint $table) {
             $table->string('drug_number')->primary();
             $table->string('drug_name');
             $table->text('description');
@@ -21,7 +21,7 @@ return new class extends Migration
             $table->integer('reorder_level');
             $table->decimal('cost_per_unit', 10, 2);
             $table->string('supplier_number');
-            $table->foreign('supplier_number')->references('supplier_number')->on('suppliers')->onDelete('cascade');
+            $table->foreign('supplier_number')->references('supplier_number')->on('supplier')->onDelete('cascade');
             $table->timestamps();
         });
     }
@@ -31,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('pharmaceuticalsupplies');
+        Schema::dropIfExists('pharmaceuticalsupply');
     }
 };

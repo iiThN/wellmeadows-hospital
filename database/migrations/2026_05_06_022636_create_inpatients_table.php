@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('inpatients', function (Blueprint $table) {
+        Schema::create('inpatient', function (Blueprint $table) {
             $table->id();
             $table->string('patient_number');
             $table->integer('ward_number');
@@ -21,8 +21,8 @@ return new class extends Migration
             $table->date('date_placed')->nullable();
             $table->date('expected_leave_date')->nullable();
             $table->date('actual_leave_date')->nullable();
-            $table->foreign('patient_number')->references('patient_number')->on('patients')->onDelete('cascade');
-            $table->foreign('ward_number')->references('ward_number')->on('wards')->onDelete('cascade');
+            $table->foreign('patient_number')->references('patient_number')->on('patient')->onDelete('cascade');
+            $table->foreign('ward_number')->references('ward_number')->on('ward')->onDelete('cascade');
             $table->timestamps();
         });
     }
@@ -32,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('inpatients');
+        Schema::dropIfExists('inpatient');
     }
 };
