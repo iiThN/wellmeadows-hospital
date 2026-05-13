@@ -1,7 +1,6 @@
 <?php
 namespace App\Http\Controllers;
 
-use Inertia\Inertia;
 use App\Models\User;
 use App\Models\Staff;
 use Illuminate\Http\Request;
@@ -27,7 +26,7 @@ class AccountController extends Controller
 
         $staff = Staff::orderBy('last_name')->get(['staff_number','first_name','last_name']);
 
-        return Inertia::render('modules/account-management/index', [
+        return response()->json([
             'accounts' => $accounts,
             'staff'    => $staff,
         ]);
@@ -51,7 +50,7 @@ class AccountController extends Controller
             'staff_number' => $validated['staff_number'] ?? null,
         ]);
 
-        return back()->with('success', 'Account created.');
+        return response()->json(['message' => 'Account created.']);
     }
 
     public function update(Request $request, int $id)
@@ -77,12 +76,12 @@ class AccountController extends Controller
 
         $user->save();
 
-        return back()->with('success', 'Account updated.');
+        return response()->json(['message' => 'Account updated.']);
     }
 
     public function destroy(int $id)
     {
         User::findOrFail($id)->delete();
-        return back()->with('success', 'Account deleted.');
+        return response()->json(['message' => 'Account deleted.']);
     }
 }

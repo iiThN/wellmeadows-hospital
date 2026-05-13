@@ -1,119 +1,69 @@
-import { type BreadcrumbItem, type SharedData } from '@/types';
-import { Transition } from '@headlessui/react';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
-
-import DeleteUser from '@/components/delete-user';
-import HeadingSmall from '@/components/heading-small';
-import InputError from '@/components/input-error';
+import { useState, useEffect, FormEvent } from 'react';
+import axios from 'axios';
+import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import AppLayout from '@/layouts/app-layout';
+import { type BreadcrumbItem } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 import SettingsLayout from '@/layouts/settings/layout';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Profile settings',
-        href: '/settings/profile',
-    },
+    { title: 'Settings', href: '/settings' },
+    { title: 'Profile', href: '/settings/profile' },
 ];
 
-export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: boolean; status?: string }) {
-    const { auth } = usePage<SharedData>().props;
+export default function ProfileSettings() {
+    const { user, refresh } = useAuth();
+    const [name, setName]   = useState(user?.name ?? '');
+    const [email, setEmail] = useState(user?.email ?? '');
+    const [status, setStatus]     = useState('');
+    const [errors, setErrors]     = useState<Record<string, string>>({});
+    const [processing, setProcessing] = useState(false);
 
-    const { data, setData, patch, errors, processing, recentlySuccessful } = useForm({
-        name: auth.user.name,
-        email: auth.user.email,
-    });
+    useEffect(() => {
+        if (user) { setName(user.name); setEmail(user.email ?? ''); }
+    }, [user]);
 
-    const submit: FormEventHandler = (e) => {
+    const submit = async (e: FormEvent) => {
         e.preventDefault();
-
-        patch(route('profile.update'));
+        setProcessing(true); setErrors({}); setStatus('');
+        try {
+            await axios.patch('/settings/profile', { name, email });
+            await refresh();
+            setStatus('Profile updated.');
+        } catch (err: any) {
+            const d = err?.response?.data?.errors ?? {};
+            const f: Record<string, string> = {};
+            Object.entries(d).forEach(([k, v]) => f[k] = (v as string[])[0]);
+            setErrors(f);
+        } finally {
+            setProcessing(false);
+        }
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Profile settings" />
-
             <SettingsLayout>
-                <div className="space-y-6">
-                    <HeadingSmall title="Profile information" description="Update your name and email address" />
-
-                    <form onSubmit={submit} className="space-y-6">
-                        <div className="grid gap-2">
-                            <Label htmlFor="name">Name</Label>
-
-                            <Input
-                                id="name"
-                                className="mt-1 block w-full"
-                                value={data.name}
-                                onChange={(e) => setData('name', e.target.value)}
-                                required
-                                autoComplete="name"
-                                placeholder="Full name"
-                            />
-
-                            <InputError className="mt-2" message={errors.name} />
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="email">Email address</Label>
-
-                            <Input
-                                id="email"
-                                type="email"
-                                className="mt-1 block w-full"
-                                value={data.email}
-                                onChange={(e) => setData('email', e.target.value)}
-                                required
-                                autoComplete="username"
-                                placeholder="Email address"
-                            />
-
-                            <InputError className="mt-2" message={errors.email} />
-                        </div>
-
-                        {mustVerifyEmail && auth.user.email_verified_at === null && (
-                            <div>
-                                <p className="mt-2 text-sm text-neutral-800">
-                                    Your email address is unverified.
-                                    <Link
-                                        href={route('verification.send')}
-                                        method="post"
-                                        as="button"
-                                        className="rounded-md text-sm text-neutral-600 underline hover:text-neutral-900 focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
-                                    >
-                                        Click here to re-send the verification email.
-                                    </Link>
-                                </p>
-
-                                {status === 'verification-link-sent' && (
-                                    <div className="mt-2 text-sm font-medium text-green-600">
-                                        A new verification link has been sent to your email address.
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        <div className="flex items-center gap-4">
-                            <Button disabled={processing}>Save</Button>
-
-                            <Transition
-                                show={recentlySuccessful}
-                                enter="transition ease-in-out"
-                                enterFrom="opacity-0"
-                                leave="transition ease-in-out"
-                                leaveTo="opacity-0"
-                            >
-                                <p className="text-sm text-neutral-600">Saved</p>
-                            </Transition>
-                        </div>
-                    </form>
+                <div className="max-w-md">
+                <h2 className="text-xl font-semibold mb-6">Profile</h2>
+                {status && <div className="mb-4 text-sm text-green-600">{status}</div>}
+                <form onSubmit={submit} className="space-y-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="name">Name</Label>
+                        <Input id="name" value={name} onChange={e => setName(e.target.value)} required />
+                        {errors.name && <p className="text-xs text-red-600">{errors.name}</p>}
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+                        {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
+                    </div>
+                    <Button type="submit" disabled={processing}>
+                        {processing ? 'Saving…' : 'Save changes'}
+                    </Button>
+                </form>
                 </div>
-
-                <DeleteUser />
             </SettingsLayout>
         </AppLayout>
     );

@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('patientmedications', function (Blueprint $table) {
+        Schema::create('patientmedication', function (Blueprint $table) {
             $table->id('medication_id');
             $table->string('patient_number');
             $table->string('drug_number');
@@ -20,8 +20,8 @@ return new class extends Migration
             $table->string('method_of_admin');
             $table->date('start_date');
             $table->date('finish_date')->nullable();
-            $table->foreign('patient_number')->references('patient_number')->on('patients')->onDelete('cascade');
-            $table->foreign('drug_number')->references('drug_number')->on('pharmaceuticalsupplies')->onDelete('cascade');
+            $table->foreign('patient_number')->references('patient_number')->on('patient')->onDelete('cascade');
+            $table->foreign('drug_number')->references('drug_number')->on('pharmaceuticalsupply')->onDelete('cascade');
             $table->foreign('prescribed_by')->references('staff_number')->on('staff')->onDelete('cascade');
             $table->timestamps();
         });
@@ -32,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('patientmedications');
+        Schema::dropIfExists('patientmedication');
     }
 };

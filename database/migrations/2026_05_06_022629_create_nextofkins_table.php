@@ -11,14 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('nextofkins', function (Blueprint $table) {
+        Schema::create('nextofkin', function (Blueprint $table) {
             $table->id();
             $table->string('patient_number');
             $table->string('full_name');
             $table->string('relationship');
             $table->text('address');
             $table->string('telephone');
-            $table->foreign('patient_number')->references('patient_number')->on('patients')->onDelete('cascade');
+            $table->foreign('patient_number')->references('patient_number')->on('patient')->onDelete('cascade');
             $table->timestamps();
         });
     }
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('nextofkins');
+        Schema::dropIfExists('nextofkin');
     }
 };

@@ -1,26 +1,32 @@
 import AppLayout from '@/layouts/app-layout';
+import { type BreadcrumbItem } from '@/types';
+import { useFetch } from '@/hooks/useFetch';
 
-interface Props {
-    stats: { total_staff: number; total_accounts: number };
-}
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/personnel/dashboard' }];
 
-export default function Dashboard({ stats }: Props) {
+export default function PersonnelDashboard() {
+    const { data, loading } = useFetch('/api/personnel/dashboard', { stats: { total_staff: 0, total_accounts: 0 } });
+    const stats = data.stats;
+
     return (
-        <AppLayout>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6">Personnel Dashboard</h2>
-            <div className="grid grid-cols-2 gap-6">
-                <StatCard label="Total Staff" value={stats.total_staff} />
-                <StatCard label="User Accounts" value={stats.total_accounts} />
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+                <h1 className="text-2xl font-semibold mb-4">Personnel Dashboard</h1>
+                <div className="grid gap-4 md:grid-cols-2">
+                    {[
+                        { label: 'Total Staff',    value: stats.total_staff },
+                        { label: 'Total Accounts', value: stats.total_accounts },
+                    ].map(s => (
+                        <div key={s.label} className="rounded-lg border p-6">
+                            <div className="text-sm text-muted-foreground">{s.label}</div>
+                            {loading
+                                ? <div className="h-9 w-16 mt-1 rounded bg-muted animate-pulse" />
+                                : <div className="text-3xl font-bold">{s.value}</div>
+                            }
+                        </div>
+                    ))}
+                </div>
             </div>
         </AppLayout>
-    );
-}
-
-function StatCard({ label, value }: { label: string; value: number }) {
-    return (
-        <div className="bg-white rounded-xl p-6 border border-gray-200">
-            <p className="text-sm text-gray-500">{label}</p>
-            <p className="text-3xl font-semibold text-gray-800 mt-1">{value}</p>
-        </div>
     );
 }

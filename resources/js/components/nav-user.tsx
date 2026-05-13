@@ -3,17 +3,15 @@ import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/c
 import { UserInfo } from '@/components/user-info';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { type SharedData } from '@/types';
-import { usePage } from '@inertiajs/react';
+import { useAuth } from '@/contexts/AuthContext';
 import { ChevronsUpDown } from 'lucide-react';
 
 export function NavUser() {
-    const { auth } = usePage<SharedData>().props;
+    const { user } = useAuth();
     const { state } = useSidebar();
     const isMobile = useIsMobile();
 
-    // Guard against null user
-    if (!auth?.user) return null;
+    if (!user) return null;
 
     return (
         <SidebarMenu>
@@ -21,7 +19,7 @@ export function NavUser() {
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <SidebarMenuButton size="lg" className="text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent group">
-                            <UserInfo user={auth.user} />
+                            <UserInfo user={user} />
                             <ChevronsUpDown className="ml-auto size-4" />
                         </SidebarMenuButton>
                     </DropdownMenuTrigger>
@@ -30,7 +28,7 @@ export function NavUser() {
                         align="end"
                         side={isMobile ? 'bottom' : state === 'collapsed' ? 'left' : 'bottom'}
                     >
-                        <UserMenuContent user={auth.user} />
+                        <UserMenuContent user={user} />
                     </DropdownMenuContent>
                 </DropdownMenu>
             </SidebarMenuItem>

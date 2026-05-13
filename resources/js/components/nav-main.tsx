@@ -1,9 +1,9 @@
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, useLocation } from 'react-router-dom';
 
 export function NavMain({ items = [] }: { items: NavItem[] }) {
-    const { url } = usePage();
+    const { pathname } = useLocation();
 
     return (
         <SidebarGroup className="px-2 py-0">
@@ -13,9 +13,9 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                     <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton
                             asChild
-                            isActive={url.startsWith(item.url)}
+                            isActive={pathname.startsWith(item.url)}
                         >
-                            <Link href={item.url}>
+                            <Link to={item.url}>
                                 {item.icon && <item.icon />}
                                 <span>{item.title}</span>
                             </Link>

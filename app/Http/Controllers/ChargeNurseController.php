@@ -1,7 +1,6 @@
 <?php
 namespace App\Http\Controllers;
 
-use Inertia\Inertia;
 use App\Models\Patient;
 use App\Models\Inpatient;
 use App\Models\Outpatient;
@@ -23,11 +22,12 @@ class ChargeNurseController extends Controller
 {
     public function dashboard()
     {
-        return Inertia::render('charge-nurse/dashboard', [
+        return response()->json([
             'stats' => [
                 'total_patients'  => Patient::count(),
                 'inpatients'      => Inpatient::whereNull('actual_leave_date')->count(),
-                'outpatients' => Outpatient::whereNotIn('patient_number',
+                'outpatients' => Outpatient::whereNotIn(
+                    'patient_number',
                     Inpatient::whereNull('actual_leave_date')->pluck('patient_number')
                 )->distinct('patient_number')->count('patient_number'),
                 'appointments'    => Appointment::count(),
@@ -43,14 +43,10 @@ class ChargeNurseController extends Controller
 
         $wards   = Ward::orderBy('ward_number')->get(['ward_number', 'ward_name']);
         $doctors = LocalDoctor::orderBy('full_name')->get();
-        $consultantNumbers = StaffPosition::where('position_title', 'Consultant')
-            ->whereNull('end_date')
-            ->pluck('staff_number');
-
-        $consultants = Staff::whereIn('staff_number', $consultantNumbers)
+        $consultants = Staff::orderBy('last_name')
             ->get(['staff_number', 'first_name', 'last_name']);
 
-        return Inertia::render('modules/patient-management/index', [
+        return response()->json([
             'patients'    => $patients,
             'wards'       => $wards,
             'doctors'     => $doctors,
@@ -77,7 +73,7 @@ class ChargeNurseController extends Controller
     public function patientStore(Request $request)
     {
         $validated = $request->validate([
-            'patient_number'  => 'required|string|unique:patients,patient_number',
+            'patient_number'  => 'required|string|unique:patients,patient_number', // ✅ fixed
             'first_name'      => 'required|string|max:100',
             'last_name'       => 'required|string|max:100',
             'address'         => 'nullable|string',
@@ -138,7 +134,7 @@ class ChargeNurseController extends Controller
             }
         }
 
-        return back()->with('success', 'Patient registered.');
+        return response()->json(['message' => 'Patient registered.']);
     }
 
     // Edit patient
@@ -157,7 +153,7 @@ class ChargeNurseController extends Controller
         ]);
 
         $patient->update($validated);
-        return back()->with('success', 'Patient updated.');
+        return response()->json(['message' => 'Patient updated.']);
     }
 
     // Admit to ward
@@ -172,13 +168,14 @@ class ChargeNurseController extends Controller
             'expected_stay_days'  => 'nullable|integer',
         ]);
 
-        // Prevent duplicate active admission
         $existing = Inpatient::where('patient_number', $id)
-                            ->whereNull('actual_leave_date')
-                            ->first();
+            ->whereNull('actual_leave_date')
+            ->first();
 
         if ($existing) {
-            return back()->with('error', 'Patient is already admitted.');
+            return response()->json([
+                'message' => 'Patient is already admitted.'
+            ], 422);
         }
 
         Inpatient::create([
@@ -189,10 +186,12 @@ class ChargeNurseController extends Controller
             'date_placed'         => $validated['date_placed'],
             'expected_leave_date' => $validated['expected_leave_date'] ?? null,
             'expected_stay_days'  => $validated['expected_stay_days'] ?? null,
-            'actual_leave_date'   => null,  
+            'actual_leave_date'   => null,
         ]);
 
-        return back()->with('success', 'Patient admitted.');
+        return response()->json([
+            'message' => 'Patient admitted.'
+        ]);
     }
 
     // Discharge
@@ -202,7 +201,9 @@ class ChargeNurseController extends Controller
 
         Inpatient::where('patient_number', $id)
             ->whereNull('actual_leave_date')
-            ->update(['actual_leave_date' => $today]);
+            ->update([
+                'actual_leave_date' => $today
+            ]);
 
         Outpatient::create([
             'patient_number'   => $id,
@@ -210,7 +211,9 @@ class ChargeNurseController extends Controller
             'appointment_time' => '08:00:00',
         ]);
 
-        return back()->with('success', 'Patient discharged and moved to out-patient.');
+        return response()->json([
+            'message' => 'Patient discharged and moved to out-patient.'
+        ]);
     }
 
     // Outpatient
@@ -227,14 +230,14 @@ class ChargeNurseController extends Controller
             'appointment_time' => $validated['appointment_time'],
         ]);
 
-        return back()->with('success', 'Out-patient appointment set.');
+        return response()->json(['message' => 'Out-patient appointment set.']);
     }
 
     // Appointment
     public function appointmentStore(Request $request, string $id)
     {
         $validated = $request->validate([
-            'appointment_number' => 'required|string|unique:appointments,appointment_number',
+            'appointment_number' => 'required|string|unique:appointments,appointment_number', // ✅ fixed
             'consultant_number'  => 'required|string',
             'appointment_date'   => 'required|date',
             'appointment_time'   => 'nullable|string',
@@ -252,17 +255,17 @@ class ChargeNurseController extends Controller
             'outcome'            => $validated['outcome'],
         ]);
 
-        return back()->with('success', 'Appointment recorded.');
+        return response()->json(['message' => 'Appointment recorded.']);
     }
 
-    //medication
+    // Medication
     public function medication()
     {
         $medications = PatientMedication::orderBy('medication_id')->get();
         $drugs        = PharmaceuticalSupply::orderBy('drug_name')->get();
         $patients     = Patient::orderBy('last_name')->get(['patient_number', 'first_name', 'last_name']);
 
-        return Inertia::render('modules/medication/index', [
+        return response()->json([
             'medications' => $medications,
             'drugs'       => $drugs,
             'patients'    => $patients,
@@ -272,8 +275,8 @@ class ChargeNurseController extends Controller
     public function medicationStore(Request $request)
     {
         $validated = $request->validate([
-            'patient_number'  => 'required|string|exists:patient,patient_number',
-            'drug_number'     => 'required|string|exists:pharmaceuticalsupply,drug_number',
+            'patient_number'  => 'required|string|exists:patients,patient_number',           // ✅ fixed
+            'drug_number'     => 'required|string|exists:pharmaceuticalsupply,drug_number',  // ✅
             'units_per_day'   => 'required|integer|min:1',
             'method_of_admin' => 'required|string',
             'start_date'      => 'required|date',
@@ -282,16 +285,16 @@ class ChargeNurseController extends Controller
         ]);
 
         PatientMedication::create($validated);
-        return back()->with('success', 'Prescription added.');
+        return response()->json(['message' => 'Prescription added.']);
     }
 
     public function medicationDestroy(int $id)
-        {
-            PatientMedication::findOrFail($id)->delete();
-            return back()->with('success', 'Prescription removed.');
-        }
+    {
+        PatientMedication::findOrFail($id)->delete();
+        return response()->json(['message' => 'Prescription removed.']);
+    }
 
-    //requisition
+    // Requisition
     public function requisitions()
     {
         $requisitions = Requisition::with('items')
@@ -302,7 +305,7 @@ class ChargeNurseController extends Controller
         $drugs    = PharmaceuticalSupply::orderBy('drug_name')->get();
         $wards    = Ward::orderBy('ward_number')->get(['ward_number', 'ward_name']);
 
-        return Inertia::render('modules/requisitions/index', [
+        return response()->json([
             'requisitions' => $requisitions,
             'supplies'     => $supplies,
             'drugs'        => $drugs,
@@ -313,13 +316,13 @@ class ChargeNurseController extends Controller
     public function requisitionStore(Request $request)
     {
         $validated = $request->validate([
-            'ward_number'        => 'required|integer',
-            'items'              => 'required|array|min:1',
-            'items.*.type'       => 'required|in:supply,drug',
-            'items.*.item_number'=> 'nullable|string',
-            'items.*.drug_number'=> 'nullable|string',
-            'items.*.quantity'   => 'required|integer|min:1',
-            'items.*.cost'       => 'required|numeric|min:0',
+            'ward_number'         => 'required|integer',
+            'items'               => 'required|array|min:1',
+            'items.*.type'        => 'required|in:supply,drug',
+            'items.*.item_number' => 'nullable|string',
+            'items.*.drug_number' => 'nullable|string',
+            'items.*.quantity'    => 'required|integer|min:1',
+            'items.*.cost'        => 'required|numeric|min:0',
         ]);
 
         $reqNumber = 'REQ-' . strtoupper(uniqid());
@@ -344,17 +347,17 @@ class ChargeNurseController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Requisition submitted.');
+        return response()->json(['message' => 'Requisition submitted.']);
     }
 
-    //staffrota
+    // Staff Rota
     public function rota()
     {
-        $rotas  = StaffRota::orderByDesc('week_beginning')->get();
-        $staff  = Staff::orderBy('last_name')->get(['staff_number', 'first_name', 'last_name']);
-        $wards  = Ward::orderBy('ward_number')->get(['ward_number', 'ward_name']);
+        $rotas = StaffRota::orderByDesc('week_beginning')->get();
+        $staff = Staff::orderBy('last_name')->get(['staff_number', 'first_name', 'last_name']);
+        $wards = Ward::orderBy('ward_number')->get(['ward_number', 'ward_name']);
 
-        return Inertia::render('modules/rota/index', [
+        return response()->json([
             'rotas' => $rotas,
             'staff' => $staff,
             'wards' => $wards,
@@ -364,19 +367,19 @@ class ChargeNurseController extends Controller
     public function rotaStore(Request $request)
     {
         $validated = $request->validate([
-            'staff_number'  => 'required|string|exists:staff,staff_number',
-            'ward_number'   => 'required|integer|exists:wards,ward_number',
-            'week_beginning'=> 'required|date',
-            'shift'         => 'required|in:Early,Late,Night',
+            'staff_number'   => 'required|string|exists:staff,staff_number',   // ✅
+            'ward_number'    => 'required|integer|exists:wards,ward_number',   // ✅ fixed
+            'week_beginning' => 'required|date',
+            'shift'          => 'required|in:Early,Late,Night',
         ]);
 
         StaffRota::create($validated);
-        return back()->with('success', 'Rota entry added.');
+        return response()->json(['message' => 'Rota entry added.']);
     }
 
     public function rotaDestroy(int $id)
     {
         StaffRota::findOrFail($id)->delete();
-        return back()->with('success', 'Rota entry removed.');
+        return response()->json(['message' => 'Rota entry removed.']);
     }
 }

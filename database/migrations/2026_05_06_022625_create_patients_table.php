@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('patients', function (Blueprint $table) {
+        Schema::create('patient', function (Blueprint $table) {
             $table->string('patient_number')->primary();
             $table->string('first_name');
             $table->string('last_name');
@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('marital_status');
             $table->date('date_registered');
             $table->string('clinic_number')->nullable();
-            $table->foreign('clinic_number')->references('clinic_number')->on('localdoctors')->nullOnDelete();
+            $table->foreign('clinic_number')->references('clinic_number')->on('localdoctor')->nullOnDelete();
             $table->timestamps();
         });
     }
@@ -32,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('patients');
+        Schema::dropIfExists('patient');
     }
 };

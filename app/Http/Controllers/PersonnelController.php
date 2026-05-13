@@ -1,7 +1,6 @@
 <?php
 namespace App\Http\Controllers;
 
-use Inertia\Inertia;
 use App\Models\Staff;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -10,7 +9,7 @@ class PersonnelController extends Controller
 {
     public function dashboard()
     {
-        return Inertia::render('personnel/dashboard', [
+        return response()->json([
             'stats' => [
                 'total_staff'    => Staff::count(),
                 'total_accounts' => User::count(),
@@ -21,12 +20,12 @@ class PersonnelController extends Controller
     public function staffIndex()
     {
         $staff = Staff::orderBy('last_name')->get();
-        return Inertia::render('modules/staff-management/index', ['staff' => $staff]);
+        return response()->json(['staff' => $staff]);
     }
 
     public function staffCreate()
     {
-        return Inertia::render('modules/staff-management/create');
+        response()->json([]);
     }
 
     public function staffStore(Request $request)
@@ -48,13 +47,13 @@ class PersonnelController extends Controller
         ]);
 
         Staff::create($validated);
-        return back()->with('success', '...');
+        return response()->json(['message' => '...']);
     }
 
     public function staffEdit(string $id)
     {
         $staff = Staff::findOrFail($id);
-        return Inertia::render('modules/staff-management/edit', ['staff' => $staff]);
+        return response()->json(['staff' => $staff]);
     }
 
     public function staffUpdate(Request $request, string $id)
@@ -77,13 +76,13 @@ class PersonnelController extends Controller
         ]);
 
         $staff->update($validated);
-        return back()->with('success', '...');
+        return response()->json(['message' => '...']);
     }
 
     public function staffDestroy(string $id)
     {
         Staff::findOrFail($id)->delete();
-        return back()->with('success', '...');
+        return response()->json(['message' => '...']);
     }
 
     public function staffShow(string $id)

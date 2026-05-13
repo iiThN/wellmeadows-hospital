@@ -4,54 +4,45 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class AuthenticatedSessionController extends Controller
 {
     /**
-     * Show the login page.
-     */
-    public function create(Request $request): Response
-    {
-        return Inertia::render('auth/login', [
-            'canResetPassword' => Route::has('password.request'),
-            'status' => $request->session()->get('status'),
-        ]);
-    }
-
-    /**
      * Handle an incoming authentication request.
+     * Returns JSON with user + redirect path (SPA handles the redirect).
      */
-        public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request)
     {
         $request->authenticate();
         $request->session()->regenerate();
 
-        $role = $request->user()->role;
+        $user = $request->user();
+        $role = $user->role;
 
-        return match($role) {
-            'personnel_officer' => redirect(route('personnel.dashboard')),
-            'charge_nurse'      => redirect(route('charge-nurse.dashboard')),
-            'medical_director'  => redirect(route('director.dashboard')),
-            default             => redirect(route('personnel.dashboard')),
+        $redirect = match($role) {
+            'personnel_officer' => '/personnel/dashboard',
+            'charge_nurse'      => '/charge-nurse/dashboard',
+            'medical_director'  => '/director/dashboard',
+            default             => '/personnel/dashboard',
         };
+
+        return response()->json([
+            'user'     => $user,
+            'redirect' => $redirect,
+        ]);
     }
 
     /**
      * Destroy an authenticated session.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request)
     {
         Auth::guard('web')->logout();
-
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        return response()->json(['message' => 'Logged out.']);
     }
 }

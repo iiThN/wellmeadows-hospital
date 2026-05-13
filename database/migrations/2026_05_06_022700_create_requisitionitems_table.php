@@ -11,16 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('requisitionitems', function (Blueprint $table) {
+        Schema::create('requisitionitem', function (Blueprint $table) {
             $table->id('req_item_id');
             $table->string('requisition_number');
             $table->string('item_number')->nullable();
             $table->string('drug_number')->nullable();
             $table->integer('quantity_required');
             $table->decimal('cost_per_unit', 10, 2);
-            $table->foreign('requisition_number')->references('requisition_number')->on('requisitions')->onDelete('cascade');
+            $table->foreign('requisition_number')->references('requisition_number')->on('requisition')->onDelete('cascade');
             $table->foreign('item_number')->references('item_number')->on('supplies')->nullOnDelete();
-            $table->foreign('drug_number')->references('drug_number')->on('pharmaceuticalsupplies')->nullOnDelete();
+            $table->foreign('drug_number')->references('drug_number')->on('pharmaceuticalsupply')->nullOnDelete();
             $table->timestamps();
         });
     }
@@ -30,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('requisitionitems');
+        Schema::dropIfExists('requisitionitem');
     }
 };

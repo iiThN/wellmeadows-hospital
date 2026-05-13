@@ -2,7 +2,6 @@
 namespace App\Http\Controllers\Modules;
 
 use App\Http\Controllers\Controller;
-use Inertia\Inertia;
 use App\Models\Ward;
 use App\Models\Inpatient;
 use App\Models\Patient;
@@ -37,7 +36,7 @@ class WardManagementController extends Controller
             ];
         });
 
-        return Inertia::render('modules/ward-management/index', [
+        return response()->json([
             'wards' => $wards,
         ]);
     }
@@ -45,7 +44,7 @@ class WardManagementController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'ward_number'   => 'required|integer|unique:wards,ward_number',
+            'ward_number'   => 'required|integer|exists:wards,ward_number',
             'ward_name'     => 'required|string|max:100',
             'location'      => 'required|string|max:100',
             'total_beds'    => 'required|integer|min:1',
@@ -53,7 +52,7 @@ class WardManagementController extends Controller
         ]);
 
         Ward::create($validated);
-        return back()->with('success', 'Ward created.');
+        return response()->json(['message' => 'Ward created.']);
     }
 
     public function update(Request $request, int $id)
@@ -68,13 +67,13 @@ class WardManagementController extends Controller
         ]);
 
         $ward->update($validated);
-        return back()->with('success', 'Ward updated.');
+        return response()->json(['message' => 'Ward updated.']);
     }
 
     public function destroy(int $id)
     {
         Ward::findOrFail($id)->delete();
-        return back()->with('success', 'Ward deleted.');
+        return response()->json(['message' => 'Ward deleted.']);
     }
 
     public function show(int $id)

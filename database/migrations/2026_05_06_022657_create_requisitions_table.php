@@ -11,14 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('requisitions', function (Blueprint $table) {
+        Schema::create('requisition', function (Blueprint $table) {
             $table->string('requisition_number')->primary();
             $table->date('requisition_date');
             $table->date('signed_date')->nullable();
             $table->string('signed_by')->nullable();
             $table->integer('ward_number');
             $table->string('staff_number');
-            $table->foreign('ward_number')->references('ward_number')->on('wards')->onDelete('cascade');
+            $table->foreign('ward_number')->references('ward_number')->on('ward')->onDelete('cascade');
             $table->foreign('staff_number')->references('staff_number')->on('staff')->onDelete('cascade');
             $table->timestamps();
         });
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('requisitions');
+        Schema::dropIfExists('requisition');
     }
 };
