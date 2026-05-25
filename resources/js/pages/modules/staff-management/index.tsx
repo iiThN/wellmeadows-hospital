@@ -31,6 +31,7 @@ export default function StaffIndex({ staff }: { staff: Staff[] }) {
 
     async function selectStaff(s: Staff) {
         if (selected?.staff_number === s.staff_number) return;
+        setSelected(s);
         setLoadingDetail(true);
         setTab('details');
         try {
@@ -60,7 +61,7 @@ export default function StaffIndex({ staff }: { staff: Staff[] }) {
     return (
         <AppLayout>
             <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold text-gray-800">Staff</h2>
+                <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">Staff</h2>
                 <Link
                     href="/personnel/staff/create"
                     className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
@@ -71,9 +72,9 @@ export default function StaffIndex({ staff }: { staff: Staff[] }) {
 
             <div className="grid grid-cols-2 gap-6 items-start">
                 {/* Staff list */}
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <table className="w-full text-sm">
-                        <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                        <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase text-xs">
                             <tr>
                                 <th className="px-4 py-3 text-left">ID</th>
                                 <th className="px-4 py-3 text-left">Name</th>
@@ -81,12 +82,12 @@ export default function StaffIndex({ staff }: { staff: Staff[] }) {
                                 <th className="px-4 py-3 text-left">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                             {staff.map((s) => (
                                 <tr
                                     key={s.staff_number}
                                     onClick={() => selectStaff(s)}
-                                    className={`cursor-pointer hover:bg-gray-50 ${selected?.staff_number === s.staff_number ? 'bg-blue-50' : ''}`}
+                                    className={`cursor-pointer hover:bg-gray-50 dark:bg-gray-800/50 ${selected?.staff_number === s.staff_number ? 'bg-blue-50 dark:bg-blue-950/50' : ''}`}
                                 >
                                     <td className="px-4 py-3 font-mono text-xs">{s.staff_number}</td>
                                     <td className="px-4 py-3 font-medium">{s.first_name} {s.last_name}</td>
@@ -114,7 +115,7 @@ export default function StaffIndex({ staff }: { staff: Staff[] }) {
                             ))}
                             {staff.length === 0 && (
                                 <tr>
-                                    <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
+                                    <td colSpan={4} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">
                                         No staff records found.
                                     </td>
                                 </tr>
@@ -125,19 +126,19 @@ export default function StaffIndex({ staff }: { staff: Staff[] }) {
 
                 {/* Detail panel */}
                 {selected ? (
-                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                        <div className="px-5 py-4 border-b border-gray-200">
-                            <p className="font-semibold text-gray-800">{selected.first_name} {selected.last_name}</p>
-                            <p className="text-xs text-gray-500">{selected.staff_number}</p>
+                    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <p className="font-semibold text-gray-800 dark:text-gray-100">{selected.first_name} {selected.last_name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{selected.staff_number}</p>
                         </div>
 
                         {/* Tabs */}
-                        <div className="flex border-b border-gray-200">
+                        <div className="flex border-b border-gray-200 dark:border-gray-700">
                             {tabs.map(t => (
                                 <button
                                     key={t.id}
                                     onClick={() => setTab(t.id)}
-                                    className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                                    className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300'}`}
                                 >
                                     {t.label}
                                 </button>
@@ -145,7 +146,9 @@ export default function StaffIndex({ staff }: { staff: Staff[] }) {
                         </div>
 
                         {loadingDetail ? (
-                            <div className="p-8 text-center text-gray-400 text-sm">Loading…</div>
+                            <div className="p-6 space-y-3">
+                                {[1,2,3,4].map(i => <div key={i} className="h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" style={{width: `${65+i*6}%`}} />)}
+                            </div>
                         ) : (
                             <>
                                 {tab === 'details' && (
@@ -167,14 +170,14 @@ export default function StaffIndex({ staff }: { staff: Staff[] }) {
 
                                 {tab === 'qualifications' && (
                                     <table className="w-full text-sm">
-                                        <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                                        <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase text-xs">
                                             <tr>
                                                 <th className="px-4 py-3 text-left">Type</th>
                                                 <th className="px-4 py-3 text-left">Date</th>
                                                 <th className="px-4 py-3 text-left">Institution</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-100">
+                                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                             {selected.qualifications?.length > 0 ? selected.qualifications.map(q => (
                                                 <tr key={q.id}>
                                                     <td className="px-4 py-3 font-medium">{q.qual_type}</td>
@@ -188,7 +191,7 @@ export default function StaffIndex({ staff }: { staff: Staff[] }) {
 
                                 {tab === 'experience' && (
                                     <table className="w-full text-sm">
-                                        <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                                        <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase text-xs">
                                             <tr>
                                                 <th className="px-4 py-3 text-left">Position</th>
                                                 <th className="px-4 py-3 text-left">Organization</th>
@@ -196,7 +199,7 @@ export default function StaffIndex({ staff }: { staff: Staff[] }) {
                                                 <th className="px-4 py-3 text-left">Finish</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-100">
+                                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                             {selected.workExperiences?.length > 0 ? selected.workExperiences.map(e => (
                                                 <tr key={e.id}>
                                                     <td className="px-4 py-3 font-medium">{e.position}</td>
@@ -211,14 +214,14 @@ export default function StaffIndex({ staff }: { staff: Staff[] }) {
 
                                 {tab === 'shifts' && (
                                     <table className="w-full text-sm">
-                                        <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                                        <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase text-xs">
                                             <tr>
                                                 <th className="px-4 py-3 text-left">Ward</th>
                                                 <th className="px-4 py-3 text-left">Week Beginning</th>
                                                 <th className="px-4 py-3 text-left">Shift</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-100">
+                                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                             {selected.rotas?.length > 0 ? selected.rotas.map(r => (
                                                 <tr key={r.rota_id}>
                                                     <td className="px-4 py-3">Ward {r.ward_number}</td>
@@ -241,8 +244,8 @@ export default function StaffIndex({ staff }: { staff: Staff[] }) {
                         )}
                     </div>
                 ) : (
-                    <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center h-64">
-                        <p className="text-gray-400 text-sm">Select a staff member to view their profile.</p>
+                    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-center h-64">
+                        <p className="text-gray-400 dark:text-gray-500 text-sm">Select a staff member to view their profile.</p>
                     </div>
                 )}
             </div>
@@ -253,8 +256,8 @@ export default function StaffIndex({ staff }: { staff: Staff[] }) {
 function Detail({ label, value }: { label: string; value: string }) {
     return (
         <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
-            <p className="text-gray-800 font-medium mt-0.5">{value || '—'}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wide">{label}</p>
+            <p className="text-gray-800 dark:text-gray-100 font-medium mt-0.5">{value || '—'}</p>
         </div>
     );
 }
@@ -262,7 +265,7 @@ function Detail({ label, value }: { label: string; value: string }) {
 function EmptyRow({ cols, message }: { cols: number; message: string }) {
     return (
         <tr>
-            <td colSpan={cols} className="px-4 py-8 text-center text-gray-400 text-sm">{message}</td>
+            <td colSpan={cols} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500 text-sm">{message}</td>
         </tr>
     );
 }

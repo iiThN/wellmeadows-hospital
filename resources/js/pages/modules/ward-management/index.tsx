@@ -76,6 +76,7 @@ export default function WardManagement({ wards }: { wards: Ward[] }) {
     });
 
     async function selectWard(w: Ward) {
+        setSelected({ ward: w, staff: [], patients: [], supplies: [] });
         setLoading(true);
         setTab('patients');
         try {
@@ -134,9 +135,9 @@ export default function WardManagement({ wards }: { wards: Ward[] }) {
     const totalVacant   = wards.reduce((a, w) => a + w.vacant_beds, 0);
 
     const tabs: { id: Tab; label: string }[] = [
-        { id: 'patients', label: 'Patients (h)(i)' },
-        { id: 'staff',    label: 'Staff (c)' },
-        { id: 'supplies', label: 'Supplies (n)' },
+        { id: 'patients', label: 'Patients' },
+        { id: 'staff',    label: 'Staff' },
+        { id: 'supplies', label: 'Supplies' },
     ];
 
     return (
@@ -162,14 +163,14 @@ export default function WardManagement({ wards }: { wards: Ward[] }) {
 
                 <div className="grid grid-cols-2 gap-6 items-start">
                     {/* Ward list */}
-                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-                            <p className="text-sm font-medium text-gray-700">Wards ({filtered.length})</p>
+                    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Wards ({filtered.length})</p>
                             <input placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)}
-                                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-40" />
+                                className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-40" />
                         </div>
                         <table className="w-full text-sm">
-                            <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                            <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase text-xs">
                                 <tr>
                                     <th className="px-4 py-3 text-left">No.</th>
                                     <th className="px-4 py-3 text-left">Name</th>
@@ -179,26 +180,26 @@ export default function WardManagement({ wards }: { wards: Ward[] }) {
                                     <th className="px-4 py-3 text-left">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                 {filtered.map(w => {
                                     const pct = w.total_beds > 0 ? Math.round((w.occupied_beds / w.total_beds) * 100) : 0;
                                     return (
                                         <tr key={w.ward_number}
                                             onClick={() => selectWard(w)}
-                                            className={`cursor-pointer hover:bg-gray-50 ${selected?.ward.ward_number === w.ward_number ? 'bg-blue-50' : ''}`}>
+                                            className={`cursor-pointer hover:bg-gray-50 dark:bg-gray-800/50 ${selected?.ward.ward_number === w.ward_number ? 'bg-blue-50 dark:bg-blue-950/50' : ''}`}>
                                             <td className="px-4 py-3 font-mono text-xs">{w.ward_number}</td>
                                             <td className="px-4 py-3 font-medium">{w.ward_name}</td>
                                             <td className="px-4 py-3">
-                                                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">{w.location}</span>
+                                                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 dark:text-gray-500">{w.location}</span>
                                             </td>
                                             <td className="px-4 py-3 text-xs">{w.occupied_beds}/{w.total_beds}</td>
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                                                        <div className={`h-full rounded-full ${pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-green-500'}`}
+                                                    <div className="w-16 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                                                        <div className={`h-full rounded-full ${pct >= 90 ? 'bg-red-50 dark:bg-red-950/500' : pct >= 70 ? 'bg-amber-50 dark:bg-amber-950/500' : 'bg-green-50 dark:bg-green-950/500'}`}
                                                             style={{ width: `${pct}%` }} />
                                                     </div>
-                                                    <span className="text-xs text-gray-500">{pct}%</span>
+                                                    <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{pct}%</span>
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 space-x-2" onClick={e => e.stopPropagation()}>
@@ -209,7 +210,7 @@ export default function WardManagement({ wards }: { wards: Ward[] }) {
                                     );
                                 })}
                                 {filtered.length === 0 && (
-                                    <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400 text-sm">No wards found.</td></tr>
+                                    <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500 text-sm">No wards found.</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -217,22 +218,22 @@ export default function WardManagement({ wards }: { wards: Ward[] }) {
 
                     {/* Ward detail panel */}
                     {selected ? (
-                        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                            <div className="px-5 py-4 border-b border-gray-200">
-                                <p className="font-semibold text-gray-800">Ward {selected.ward.ward_number} — {selected.ward.ward_name}</p>
-                                <p className="text-xs text-gray-500">{selected.ward.location} · Ext. {selected.ward.tel_extension} · {selected.ward.occupied_beds}/{selected.ward.total_beds} beds occupied</p>
+                        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                            <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+                                <p className="font-semibold text-gray-800 dark:text-gray-100">Ward {selected.ward.ward_number} — {selected.ward.ward_name}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{selected.ward.location} · Ext. {selected.ward.tel_extension} · {selected.ward.occupied_beds}/{selected.ward.total_beds} beds occupied</p>
                             </div>
 
                             {/* Bed availability bar */}
-                            <div className="px-5 py-3 border-b border-gray-200">
-                                <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                            <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-700">
+                                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">
                                     <span>Bed Availability</span>
                                     <span>{selected.ward.vacant_beds} vacant of {selected.ward.total_beds}</span>
                                 </div>
-                                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                                     <div className={`h-full rounded-full transition-all ${
-                                        (selected.ward.occupied_beds / selected.ward.total_beds) >= 0.9 ? 'bg-red-500' :
-                                        (selected.ward.occupied_beds / selected.ward.total_beds) >= 0.7 ? 'bg-amber-500' : 'bg-green-500'
+                                        (selected.ward.occupied_beds / selected.ward.total_beds) >= 0.9 ? 'bg-red-50 dark:bg-red-950/500' :
+                                        (selected.ward.occupied_beds / selected.ward.total_beds) >= 0.7 ? 'bg-amber-50 dark:bg-amber-950/500' : 'bg-green-50 dark:bg-green-950/500'
                                     }`} style={{ width: `${Math.round((selected.ward.occupied_beds / selected.ward.total_beds) * 100)}%` }} />
                                 </div>
                                 <div className="flex gap-4 mt-2 text-xs">
@@ -242,23 +243,25 @@ export default function WardManagement({ wards }: { wards: Ward[] }) {
                             </div>
 
                             {/* Tabs */}
-                            <div className="flex border-b border-gray-200">
+                            <div className="flex border-b border-gray-200 dark:border-gray-700">
                                 {tabs.map(t => (
                                     <button key={t.id} onClick={() => setTab(t.id)}
-                                        className={`px-4 py-2 text-xs font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                                        className={`px-4 py-2 text-xs font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300'}`}>
                                         {t.label}
                                     </button>
                                 ))}
                             </div>
 
                             {loading ? (
-                                <div className="p-8 text-center text-gray-400 text-sm">Loading…</div>
+                                <div className="p-6 space-y-3">
+                                    {[1,2,3,4,5].map(i => <div key={i} className="h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" style={{width: `${60+i*7}%`}} />)}
+                                </div>
                             ) : (
                                 <>
                                     {/* (h)(i) Patients in ward */}
                                     {tab === 'patients' && (
                                         <table className="w-full text-sm">
-                                            <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                                            <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase text-xs">
                                                 <tr>
                                                     <th className="px-4 py-3 text-left">Patient</th>
                                                     <th className="px-4 py-3 text-left">Bed</th>
@@ -267,7 +270,7 @@ export default function WardManagement({ wards }: { wards: Ward[] }) {
                                                     <th className="px-4 py-3 text-left">Stay</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-gray-100">
+                                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                                 {selected.patients.length > 0 ? selected.patients.map(p => (
                                                     <tr key={p.patient_number}>
                                                         <td className="px-4 py-3 font-medium">P{p.patient_number} — {p.first_name} {p.last_name}</td>
@@ -276,7 +279,7 @@ export default function WardManagement({ wards }: { wards: Ward[] }) {
                                                         <td className="px-4 py-3 font-mono text-xs">{p.expected_leave_date ?? '—'}</td>
                                                         <td className="px-4 py-3 text-xs">{p.expected_stay_days ? `${p.expected_stay_days}d` : '—'}</td>
                                                     </tr>
-                                                )) : <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-sm">No patients currently admitted.</td></tr>}
+                                                )) : <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500 text-sm">No patients currently admitted.</td></tr>}
                                             </tbody>
                                         </table>
                                     )}
@@ -284,7 +287,7 @@ export default function WardManagement({ wards }: { wards: Ward[] }) {
                                     {/* (c) Staff in ward */}
                                     {tab === 'staff' && (
                                         <table className="w-full text-sm">
-                                            <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                                            <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase text-xs">
                                                 <tr>
                                                     <th className="px-4 py-3 text-left">Staff No.</th>
                                                     <th className="px-4 py-3 text-left">Name</th>
@@ -293,7 +296,7 @@ export default function WardManagement({ wards }: { wards: Ward[] }) {
                                                     <th className="px-4 py-3 text-left">Week</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-gray-100">
+                                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                                 {selected.staff.length > 0 ? selected.staff.map(s => (
                                                     <tr key={s.staff_number}>
                                                         <td className="px-4 py-3 font-mono text-xs">{s.staff_number}</td>
@@ -308,7 +311,7 @@ export default function WardManagement({ wards }: { wards: Ward[] }) {
                                                         </td>
                                                         <td className="px-4 py-3 font-mono text-xs">{s.week_beginning}</td>
                                                     </tr>
-                                                )) : <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-sm">No staff allocated to this ward.</td></tr>}
+                                                )) : <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500 text-sm">No staff allocated to this ward.</td></tr>}
                                             </tbody>
                                         </table>
                                     )}
@@ -316,7 +319,7 @@ export default function WardManagement({ wards }: { wards: Ward[] }) {
                                     {/* (n) Supplies for ward */}
                                     {tab === 'supplies' && (
                                         <table className="w-full text-sm">
-                                            <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                                            <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase text-xs">
                                                 <tr>
                                                     <th className="px-4 py-3 text-left">Req. No.</th>
                                                     <th className="px-4 py-3 text-left">Date</th>
@@ -326,7 +329,7 @@ export default function WardManagement({ wards }: { wards: Ward[] }) {
                                                     <th className="px-4 py-3 text-left">Cost</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-gray-100">
+                                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                                 {selected.supplies.length > 0 ? selected.supplies.map((s, i) => (
                                                     <tr key={i}>
                                                         <td className="px-4 py-3 font-mono text-xs">{s.requisition_number}</td>
@@ -338,7 +341,7 @@ export default function WardManagement({ wards }: { wards: Ward[] }) {
                                                         <td className="px-4 py-3">{s.quantity_required}</td>
                                                         <td className="px-4 py-3">£{Number(s.cost_per_unit).toFixed(2)}</td>
                                                     </tr>
-                                                )) : <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400 text-sm">No supplies recorded for this ward.</td></tr>}
+                                                )) : <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500 text-sm">No supplies recorded for this ward.</td></tr>}
                                             </tbody>
                                         </table>
                                     )}
@@ -346,8 +349,8 @@ export default function WardManagement({ wards }: { wards: Ward[] }) {
                             )}
                         </div>
                     ) : (
-                        <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center h-64">
-                            <p className="text-gray-400 text-sm">Select a ward to view details.</p>
+                        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-center h-64">
+                            <p className="text-gray-400 dark:text-gray-500 text-sm">Select a ward to view details.</p>
                         </div>
                     )}
                 </div>
@@ -356,12 +359,12 @@ export default function WardManagement({ wards }: { wards: Ward[] }) {
             {/* Modals */}
             {modal && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setModal(null)}>
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-5">
-                            <h3 className="text-lg font-semibold text-gray-800">
+                            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
                                 {modal === 'create' ? 'Add New Ward' : `Edit — Ward ${editTarget?.ward_number}`}
                             </h3>
-                            <button onClick={() => setModal(null)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+                            <button onClick={() => setModal(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500 text-xl">×</button>
                         </div>
 
                         <form onSubmit={modal === 'create' ? submitCreate : submitEdit} className="space-y-4">
@@ -397,7 +400,7 @@ export default function WardManagement({ wards }: { wards: Ward[] }) {
                                 </Field>
                             </div>
 
-                            <div className="flex gap-3 pt-2 border-t border-gray-200">
+                            <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
                                 <button type="submit"
                                     disabled={modal === 'create' ? createForm.processing : editForm.processing}
                                     className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">
@@ -405,7 +408,7 @@ export default function WardManagement({ wards }: { wards: Ward[] }) {
                                         ? (createForm.processing ? 'Creating…' : 'Create Ward')
                                         : (editForm.processing   ? 'Saving…'   : 'Save Changes')}
                                 </button>
-                                <button type="button" onClick={() => setModal(null)} className="px-5 py-2 text-sm text-gray-600 hover:underline">Cancel</button>
+                                <button type="button" onClick={() => setModal(null)} className="px-5 py-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:underline">Cancel</button>
                             </div>
                         </form>
                     </div>
@@ -417,10 +420,10 @@ export default function WardManagement({ wards }: { wards: Ward[] }) {
 
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
     const colors: Record<string, string> = {
-        blue:   'bg-blue-50 text-blue-700 border-blue-100',
-        purple: 'bg-purple-50 text-purple-700 border-purple-100',
-        red:    'bg-red-50 text-red-700 border-red-100',
-        green:  'bg-green-50 text-green-700 border-green-100',
+        blue:   'bg-blue-50 dark:bg-blue-950/50 text-blue-700 border-blue-100 dark:border-blue-900',
+        purple: 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 border-purple-100',
+        red:    'bg-red-50 dark:bg-red-950/50 text-red-700 border-red-100',
+        green:  'bg-green-50 dark:bg-green-950/50 text-green-700 border-green-100',
     };
     return (
         <div className={`rounded-xl p-4 border ${colors[color]}`}>
@@ -433,11 +436,11 @@ function StatCard({ label, value, color }: { label: string; value: number; color
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
     return (
         <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
             {children}
             {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
         </div>
     );
 }
 
-const inp = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
+const inp = 'w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
