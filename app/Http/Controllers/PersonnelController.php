@@ -88,6 +88,33 @@ class PersonnelController extends Controller
     public function staffShow(string $id)
     {
         $staff = Staff::with(['qualifications', 'workExperiences', 'rotas'])->findOrFail($id);
-        return response()->json($staff);
+
+        // Get wards this staff is assigned to via rota
+        $wardNumbers = $staff->rotas->pluck('ward_number')->unique();
+
+        // Get patients currently admitted in those wards
+        $inpatients = \App\Models\Inpatient::whereIn('ward_number', $wardNumbers)
+            ->whereNull('actual_leave_date')
+            ->get();
+
+        $patientNumbers = $inpatients->pluck('patient_number');
+        $patients = \App\Models\Patient::whereIn('patient_number', $patientNumbers)
+            ->get(['patient_number', 'first_name', 'last_name', 'sex', 'date_of_birth']);
+
+        $staffData = $staff->toArray();
+        $staffData['patients'] = $inpatients->map(function ($ip) use ($patients) {
+            $patient = $patients->where('patient_number', $ip->patient_number)->first();
+            return [
+                'patient_number' => $ip->patient_number,
+                'first_name'     => $patient?->first_name ?? '—',
+                'last_name'      => $patient?->last_name ?? '—',
+                'ward_number'    => $ip->ward_number,
+                'bed_number'     => $ip->bed_number,
+                'date_placed'    => $ip->date_placed,
+                'expected_leave_date' => $ip->expected_leave_date,
+            ];
+        })->values();
+
+        return response()->json($staffData);
     }
 }
