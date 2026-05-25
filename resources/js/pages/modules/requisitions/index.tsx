@@ -125,14 +125,14 @@ export default function RequisitionsPage({
 
                 <div className="grid grid-cols-2 gap-6 items-start">
                     {/* Requisitions list */}
-                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-                            <p className="text-sm font-medium text-gray-700">Requisitions ({filtered.length})</p>
+                    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Requisitions ({filtered.length})</p>
                             <input placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)}
-                                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-40" />
+                                className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-40" />
                         </div>
                         <table className="w-full text-sm">
-                            <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                            <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase text-xs">
                                 <tr>
                                     <th className="px-4 py-3 text-left">Req. No.</th>
                                     <th className="px-4 py-3 text-left">Ward</th>
@@ -140,11 +140,11 @@ export default function RequisitionsPage({
                                     <th className="px-4 py-3 text-left">Items</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                 {filtered.map(r => (
                                     <tr key={r.requisition_number}
                                         onClick={() => setSelected(selected?.requisition_number === r.requisition_number ? null : r)}
-                                        className={`cursor-pointer hover:bg-gray-50 ${selected?.requisition_number === r.requisition_number ? 'bg-blue-50' : ''}`}>
+                                        className={`cursor-pointer hover:bg-gray-50 dark:bg-gray-800/50 ${selected?.requisition_number === r.requisition_number ? 'bg-blue-50 dark:bg-blue-950/50' : ''}`}>
                                         <td className="px-4 py-3 font-mono text-xs">{r.requisition_number}</td>
                                         <td className="px-4 py-3">Ward {r.ward_number}</td>
                                         <td className="px-4 py-3 font-mono text-xs">{r.requisition_date}</td>
@@ -152,7 +152,7 @@ export default function RequisitionsPage({
                                     </tr>
                                 ))}
                                 {filtered.length === 0 && (
-                                    <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400 text-sm">No requisitions found.</td></tr>
+                                    <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500 text-sm">No requisitions found.</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -160,13 +160,13 @@ export default function RequisitionsPage({
 
                     {/* Requisition detail */}
                     {selected ? (
-                        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                            <div className="px-5 py-4 border-b border-gray-200">
-                                <p className="font-semibold text-gray-800">Requisition #{selected.requisition_number}</p>
-                                <p className="text-xs text-gray-500">Ward {selected.ward_number} · {selected.requisition_date} · Signed by: {selected.signed_by}</p>
+                        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                            <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+                                <p className="font-semibold text-gray-800 dark:text-gray-100">Requisition #{selected.requisition_number}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Ward {selected.ward_number} · {selected.requisition_date} · Signed by: {selected.signed_by}</p>
                             </div>
                             <table className="w-full text-sm">
-                                <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                                <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase text-xs">
                                     <tr>
                                         <th className="px-4 py-3 text-left">Type</th>
                                         <th className="px-4 py-3 text-left">Item</th>
@@ -175,7 +175,7 @@ export default function RequisitionsPage({
                                         <th className="px-4 py-3 text-left">Subtotal</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {selectedItems.map(item => {
                                         const drug   = drugs.find(d => d.drug_number === item.drug_number);
                                         const supply = supplies.find(s => s.item_number === item.item_number);
@@ -195,14 +195,14 @@ export default function RequisitionsPage({
                                     })}
                                 </tbody>
                             </table>
-                            <div className="px-5 py-3 border-t border-gray-200 flex justify-end">
-                                <span className="text-sm text-gray-500 mr-2">Total:</span>
+                            <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                                <span className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mr-2">Total:</span>
                                 <span className="font-semibold">£{selectedTotal.toFixed(2)}</span>
                             </div>
                         </div>
                     ) : (
-                        <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center h-48">
-                            <p className="text-gray-400 text-sm">Select a requisition to view its items.</p>
+                        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-center h-48">
+                            <p className="text-gray-400 dark:text-gray-500 text-sm">Select a requisition to view its items.</p>
                         </div>
                     )}
                 </div>
@@ -211,10 +211,10 @@ export default function RequisitionsPage({
             {/* Modal */}
             {modal && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setModal(false)}>
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-5">
-                            <h3 className="text-lg font-semibold text-gray-800">New Requisition</h3>
-                            <button onClick={() => setModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+                            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">New Requisition</h3>
+                            <button onClick={() => setModal(false)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500 text-xl">×</button>
                         </div>
 
                         <form onSubmit={submitReq} className="space-y-4">
@@ -226,25 +226,25 @@ export default function RequisitionsPage({
                             </Field>
 
                             <div>
-                                <p className="text-sm font-medium text-gray-700 mb-2">Items to Order</p>
+                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Items to Order</p>
                                 {items.map((item, i) => (
-                                    <div key={i} className="p-3 bg-gray-50 rounded-lg border border-gray-200 mb-3">
+                                    <div key={i} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 mb-3">
                                         <div className="flex justify-between mb-2">
-                                            <p className="text-xs font-medium text-gray-600">Item {i + 1}</p>
+                                            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500">Item {i + 1}</p>
                                             {items.length > 1 && (
                                                 <button type="button" onClick={() => removeItem(i)} className="text-xs text-red-500 hover:underline">Remove</button>
                                             )}
                                         </div>
                                         <div className="grid grid-cols-4 gap-3">
                                             <div>
-                                                <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
+                                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
                                                 <select value={item.type} onChange={e => { updateItem(i, 'type', e.target.value); updateItem(i, 'item_number', ''); updateItem(i, 'drug_number', ''); }} className={inp}>
                                                     <option value="supply">Surgical</option>
                                                     <option value="drug">Drug</option>
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-medium text-gray-700 mb-1">{item.type === 'drug' ? 'Drug' : 'Item'}</label>
+                                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.type === 'drug' ? 'Drug' : 'Item'}</label>
                                                 {item.type === 'drug' ? (
                                                     <select value={item.drug_number} onChange={e => { updateItem(i, 'drug_number', e.target.value); autofillCost(i, 'drug', e.target.value); }} className={inp}>
                                                         <option value="">— Select —</option>
@@ -258,16 +258,16 @@ export default function RequisitionsPage({
                                                 )}
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-medium text-gray-700 mb-1">Qty</label>
+                                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Qty</label>
                                                 <input type="number" value={item.quantity} onChange={e => updateItem(i, 'quantity', e.target.value)} className={inp} placeholder="0" />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-medium text-gray-700 mb-1">Cost/Unit</label>
+                                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Cost/Unit</label>
                                                 <input type="number" step="0.01" value={item.cost} onChange={e => updateItem(i, 'cost', e.target.value)} className={inp} placeholder="0.00" />
                                             </div>
                                         </div>
                                         {item.quantity && item.cost && (
-                                            <p className="text-xs text-gray-500 mt-2 text-right">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2 text-right">
                                                 Subtotal: <strong>£{(parseFloat(item.quantity) * parseFloat(item.cost)).toFixed(2)}</strong>
                                             </p>
                                         )}
@@ -276,19 +276,19 @@ export default function RequisitionsPage({
                                 <button type="button" onClick={addItem} className="text-sm text-blue-600 hover:underline">+ Add item</button>
                             </div>
 
-                            <div className="bg-blue-50 rounded-lg px-4 py-3 flex justify-between items-center">
-                                <span className="text-sm text-gray-600">Order total:</span>
+                            <div className="bg-blue-50 dark:bg-blue-950/50 rounded-lg px-4 py-3 flex justify-between items-center">
+                                <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">Order total:</span>
                                 <span className="font-semibold font-mono">
                                     £{items.reduce((a, i) => a + (parseFloat(i.quantity) || 0) * (parseFloat(i.cost) || 0), 0).toFixed(2)}
                                 </span>
                             </div>
 
-                            <div className="flex gap-3 pt-2 border-t border-gray-200">
+                            <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
                                 <button type="submit" disabled={form.processing}
                                     className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">
                                     {form.processing ? 'Submitting…' : '✓ Submit Requisition'}
                                 </button>
-                                <button type="button" onClick={() => setModal(false)} className="px-5 py-2 text-sm text-gray-600 hover:underline">Cancel</button>
+                                <button type="button" onClick={() => setModal(false)} className="px-5 py-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:underline">Cancel</button>
                             </div>
                         </form>
                     </div>
@@ -300,10 +300,10 @@ export default function RequisitionsPage({
 
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
     const colors: Record<string, string> = {
-        teal:   'bg-teal-50 text-teal-700 border-teal-100',
-        blue:   'bg-blue-50 text-blue-700 border-blue-100',
-        purple: 'bg-purple-50 text-purple-700 border-purple-100',
-        amber:  'bg-amber-50 text-amber-700 border-amber-100',
+        teal:   'bg-teal-50 dark:bg-teal-950/50 text-teal-700 border-teal-100 dark:border-teal-900',
+        blue:   'bg-blue-50 dark:bg-blue-950/50 text-blue-700 border-blue-100 dark:border-blue-900',
+        purple: 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 border-purple-100',
+        amber:  'bg-amber-50 dark:bg-amber-950/50 text-amber-700 border-amber-100 dark:border-amber-900',
     };
     return (
         <div className={`rounded-xl p-4 border ${colors[color]}`}>
@@ -316,11 +316,11 @@ function StatCard({ label, value, color }: { label: string; value: number; color
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
     return (
         <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
             {children}
             {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
         </div>
     );
 }
 
-const inp = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
+const inp = 'w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
