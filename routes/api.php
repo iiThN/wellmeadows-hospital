@@ -69,6 +69,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/modules/ward-management', [WardManagementController::class, 'store']);
     Route::put('/modules/ward-management/{id}', [WardManagementController::class, 'update']);
     Route::delete('/modules/ward-management/{id}', [WardManagementController::class, 'destroy']);
+    Route::post('/modules/staff-management/{id}/positions', [PersonnelController::class, 'staffPositionStore']);
+    Route::put('/modules/staff-management/{id}/positions/{posId}', [PersonnelController::class, 'staffPositionUpdate']);
+    Route::delete('/modules/staff-management/{id}/positions/{posId}', [PersonnelController::class, 'staffPositionDestroy']);
 
     // Appointment & Treatment
     Route::get('/modules/appointment-treatment', [AppointmentTreatmentController::class, 'index']);

@@ -86,35 +86,68 @@ class PersonnelController extends Controller
     }
 
     public function staffShow(string $id)
-    {
-        $staff = Staff::with(['qualifications', 'workExperiences', 'rotas'])->findOrFail($id);
+        {
+            $staff = Staff::with(['qualifications', 'workExperiences', 'rotas', 'positions'])->findOrFail($id);
 
-        // Get wards this staff is assigned to via rota
-        $wardNumbers = $staff->rotas->pluck('ward_number')->unique();
+            $wardNumbers = $staff->rotas->pluck('ward_number')->unique();
 
-        // Get patients currently admitted in those wards
-        $inpatients = \App\Models\Inpatient::whereIn('ward_number', $wardNumbers)
-            ->whereNull('actual_leave_date')
-            ->get();
+            $inpatients = \App\Models\Inpatient::whereIn('ward_number', $wardNumbers)
+                ->whereNull('actual_leave_date')
+                ->get();
 
-        $patientNumbers = $inpatients->pluck('patient_number');
-        $patients = \App\Models\Patient::whereIn('patient_number', $patientNumbers)
-            ->get(['patient_number', 'first_name', 'last_name', 'sex', 'date_of_birth']);
+            $patientNumbers = $inpatients->pluck('patient_number');
+            $patients = \App\Models\Patient::whereIn('patient_number', $patientNumbers)
+                ->get(['patient_number', 'first_name', 'last_name', 'sex', 'date_of_birth']);
 
-        $staffData = $staff->toArray();
-        $staffData['patients'] = $inpatients->map(function ($ip) use ($patients) {
-            $patient = $patients->where('patient_number', $ip->patient_number)->first();
-            return [
-                'patient_number' => $ip->patient_number,
-                'first_name'     => $patient?->first_name ?? '—',
-                'last_name'      => $patient?->last_name ?? '—',
-                'ward_number'    => $ip->ward_number,
-                'bed_number'     => $ip->bed_number,
-                'date_placed'    => $ip->date_placed,
-                'expected_leave_date' => $ip->expected_leave_date,
-            ];
-        })->values();
+            $staffData = $staff->toArray();
+            $staffData['patients'] = $inpatients->map(function ($ip) use ($patients) {
+                $patient = $patients->where('patient_number', $ip->patient_number)->first();
+                return [
+                    'patient_number' => $ip->patient_number,
+                    'first_name'     => $patient?->first_name ?? '—',
+                    'last_name'      => $patient?->last_name ?? '—',
+                    'ward_number'    => $ip->ward_number,
+                    'bed_number'     => $ip->bed_number,
+                    'date_placed'    => $ip->date_placed,
+                    'expected_leave_date' => $ip->expected_leave_date,
+                ];
+            })->values();
 
-        return response()->json($staffData);
+            return response()->json($staffData);
+        }  // ← isara ang staffShow dito
+
+        public function staffPositionStore(Request $request, string $id)
+        {
+            $validated = $request->validate([
+                'position_title' => 'required|string|max:100',
+                'start_date'     => 'required|date',
+                'end_date'       => 'nullable|date|after_or_equal:start_date',
+            ]);
+
+            $validated['staff_number'] = $id;
+
+            \App\Models\StaffPosition::create($validated);
+            return response()->json(['message' => 'Position assigned.']);
+        }
+
+        public function staffPositionUpdate(Request $request, string $id, int $posId)
+        {
+            $position = \App\Models\StaffPosition::where('staff_number', $id)->findOrFail($posId);
+
+            $validated = $request->validate([
+                'position_title' => 'required|string|max:100',
+                'start_date'     => 'required|date',
+                'end_date'       => 'nullable|date|after_or_equal:start_date',
+            ]);
+
+            $position->update($validated);
+            return response()->json(['message' => 'Position updated.']);
+        }
+
+        public function staffPositionDestroy(string $id, int $posId)
+        {
+            \App\Models\StaffPosition::where('staff_number', $id)->findOrFail($posId)->delete();
+            return response()->json(['message' => 'Position removed.']);
+        }
+    
     }
-}

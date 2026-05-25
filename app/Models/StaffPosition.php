@@ -5,7 +5,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class StaffPosition extends Model
 {
-    protected $table = 'staffposition';
+    protected $table = 'staff_position';
     protected $primaryKey = 'id';
 
     protected $fillable = [

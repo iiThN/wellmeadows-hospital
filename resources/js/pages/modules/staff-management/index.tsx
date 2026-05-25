@@ -13,6 +13,7 @@ interface Staff {
     qualifications: { id: number; qual_type: string; date_obtained: string; institution: string }[];
     workExperiences: { id: number; position: string; organization: string; start_date: string; finish_date: string }[];
     rotas: { rota_id: number; week_beginning: string; shift: string; ward_number: number }[];
+    positions?: { id: number; position_title: string; start_date: string; end_date: string | null }[];
     patients?: {
         patient_number: string;
         first_name: string;
@@ -24,7 +25,7 @@ interface Staff {
     }[];
 }
 
-type Tab = 'details' | 'qualifications' | 'experience' | 'shifts' | 'patients';
+type Tab = 'details' | 'qualifications' | 'experience' | 'shifts' | 'patients' | 'positions';
 type Modal = null | 'create' | 'edit';
 
 const blankCreate = { staff_number:'', first_name:'', last_name:'', address:'', telephone:'', date_of_birth:'', sex:'Male', nin:'', current_salary:'', salary_scale:'', pay_type:'Monthly', hours_per_week:'', contract_type:'Permanent' };
@@ -108,6 +109,7 @@ export default function StaffManagement() {
         { id: 'experience',     label: 'Experience' },
         { id: 'shifts',         label: 'Shifts' },
         { id: 'patients',       label: 'Patients' },
+        { id: 'positions', label: 'Positions' },
     ];
 
     return (
@@ -334,6 +336,29 @@ export default function StaffManagement() {
                                                         </tr>
                                                     ))
                                                     : <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-sm">No patients in assigned wards.</td></tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    )}
+                                    {tab === 'positions' && (
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 uppercase text-xs">
+                                                <tr>
+                                                    <th className="px-4 py-3 text-left">Position Title</th>
+                                                    <th className="px-4 py-3 text-left">Start Date</th>
+                                                    <th className="px-4 py-3 text-left">End Date</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                                {selected.positions && selected.positions.length > 0
+                                                    ? selected.positions.map(p => (
+                                                        <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                                            <td className="px-4 py-3 font-medium">{p.position_title}</td>
+                                                            <td className="px-4 py-3 font-mono text-xs">{p.start_date}</td>
+                                                            <td className="px-4 py-3 font-mono text-xs">{p.end_date ?? '—'}</td>
+                                                        </tr>
+                                                    ))
+                                                    : <tr><td colSpan={3} className="px-4 py-8 text-center text-gray-400 text-sm">No positions assigned.</td></tr>
                                                 }
                                             </tbody>
                                         </table>
