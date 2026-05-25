@@ -5,6 +5,8 @@ use App\Http\Controllers\ChargeNurseController;
 use App\Http\Controllers\DirectorController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Modules\WardManagementController;
+use App\Http\Controllers\Modules\StaffDepartmentController;
+
 
 // Root redirect
 Route::get('/', function () {
@@ -40,6 +42,26 @@ Route::middleware(['auth', 'role:personnel_officer'])
         Route::put('/{id}', [PersonnelController::class, 'staffUpdate'])->name('staff.update');
         Route::delete('/{id}', [PersonnelController::class, 'staffDestroy'])->name('staff.destroy');
         Route::get('/{id}/details', [PersonnelController::class, 'staffShow'])->name('staff.show');
+    });
+
+// Module: Staff & Department Management (Personnel Officer)
+Route::middleware(['auth', 'role:personnel_officer'])
+    ->prefix('modules/staff-department')
+    ->group(function () {
+        // Main page
+        Route::get('/', [StaffDepartmentController::class, 'index'])->name('staff-department.index');
+ 
+        // Staff detail (JSON for the detail panel)
+        Route::get('/{staffNumber}/details', [StaffDepartmentController::class, 'show'])->name('staff-department.show');
+ 
+        // Positions
+        Route::post('/{staffNumber}/positions', [StaffDepartmentController::class, 'positionStore'])->name('staff-department.position.store');
+        Route::patch('/positions/{positionId}/end', [StaffDepartmentController::class, 'positionEnd'])->name('staff-department.position.end');
+        Route::delete('/positions/{positionId}', [StaffDepartmentController::class, 'positionDestroy'])->name('staff-department.position.destroy');
+ 
+        // Ward assignments (rotas)
+        Route::post('/{staffNumber}/rotas', [StaffDepartmentController::class, 'rotaStore'])->name('staff-department.rota.store');
+        Route::delete('/rotas/{rotaId}', [StaffDepartmentController::class, 'rotaDestroy'])->name('staff-department.rota.destroy');
     });
 
 // Module: Account Management (Personnel Officer)

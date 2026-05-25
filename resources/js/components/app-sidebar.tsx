@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Users, UserCircle, Pill, Package, Building2, FileText } from 'lucide-react';
+import { LayoutGrid, Users, UserCircle, Pill, Package, Building2, FileText, Briefcase  } from 'lucide-react';
 import AppLogo from './app-logo';
 
 interface PageProps extends Record<string, unknown> {
@@ -20,6 +20,7 @@ const navByRole: Record<string, NavItem[]> = {
     personnel_officer: [
         { title: 'Dashboard',          url: '/personnel/dashboard',           icon: LayoutGrid },
         { title: 'Staff Management',   url: '/modules/staff-management',      icon: Users },
+        { title: 'Dept. & Ward Assignment', url: '/modules/staff-department', icon: Briefcase },
         { title: 'Account Management', url: '/modules/account-management',    icon: UserCircle },
         { title: 'Ward Management',    url: '/modules/ward-management',       icon: Building2 },
     ],
