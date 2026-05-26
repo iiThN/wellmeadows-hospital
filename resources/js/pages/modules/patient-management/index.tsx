@@ -57,7 +57,7 @@ interface Appointment {
     consultant_number: string;
 }
 
-interface Ward { ward_number: number; ward_name: string }
+interface Ward { ward_number: number; ward_name: string; total_beds: number; vacant_beds: number }
 interface Doctor { clinic_number: string; full_name: string; telephone: string; }
 interface Consultant { staff_number: string; first_name: string; last_name: string }
 
@@ -89,6 +89,8 @@ export default function PatientsPage({
     const [view, setView]           = useState<'all' | 'in' | 'out'>('all');
     const [loading, setLoading]     = useState(false);
     const [step, setStep]           = useState(0);
+    const [vacantBeds, setVacantBeds]   = useState<number[]>([]);
+    const [bedsLoading, setBedsLoading] = useState(false);
 
     useEffect(() => { setModal(null); }, []);
 
@@ -121,6 +123,27 @@ export default function PatientsPage({
         appointment_date: new Date().toISOString().split('T')[0],
         appointment_time: '', examination_room: '', outcome: 'Waiting list',
     });
+
+    async function fetchVacantBeds(wardNumber: string) {
+        if (!wardNumber) { setVacantBeds([]); return; }
+        setBedsLoading(true);
+        setVacantBeds([]);
+        admitForm.setData('bed_number', '');
+        try {
+            const res = await axios.get(`/modules/ward-management/${wardNumber}/details`);
+            const { ward, patients } = res.data;
+            const occupiedBeds = new Set<number>(patients.map((p: { bed_number: number }) => p.bed_number));
+            const vacant: number[] = [];
+            for (let i = 1; i <= ward.total_beds; i++) {
+                if (!occupiedBeds.has(i)) vacant.push(i);
+            }
+            setVacantBeds(vacant);
+        } catch {
+            setVacantBeds([]);
+        } finally {
+            setBedsLoading(false);
+        }
+    }
 
     async function selectPatient(p: Patient) {
         setSelected(p);
@@ -624,13 +647,47 @@ export default function PatientsPage({
                             <form onSubmit={e => { e.preventDefault(); admitForm.post(`/modules/patient-management/${selected!.patient_number}/admit`, { preserveScroll: true, onSuccess: () => { setModal(null); refreshSelected(); } }); }} className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <Field label="Ward" error={admitForm.errors.ward_number}>
-                                        <select value={admitForm.data.ward_number} onChange={e => admitForm.setData('ward_number', e.target.value)} className={inp}>
+                                        <select
+                                            value={admitForm.data.ward_number}
+                                            onChange={e => {
+                                                admitForm.setData('ward_number', e.target.value);
+                                                fetchVacantBeds(e.target.value);
+                                            }}
+                                            className={inp}>
                                             <option value="">— Select ward —</option>
-                                            {wards.map(w => <option key={w.ward_number} value={w.ward_number}>Ward {w.ward_number} — {w.ward_name}</option>)}
+                                            {wards.map(w => (
+                                                <option key={w.ward_number} value={w.ward_number}>
+                                                    Ward {w.ward_number} — {w.ward_name} ({w.vacant_beds} vacant)
+                                                </option>
+                                            ))}
                                         </select>
                                     </Field>
                                     <Field label="Bed Number" error={admitForm.errors.bed_number}>
-                                        <input type="number" value={admitForm.data.bed_number} onChange={e => admitForm.setData('bed_number', e.target.value)} className={inp} placeholder="e.g. 84" />
+                                        <select
+                                            value={admitForm.data.bed_number}
+                                            onChange={e => admitForm.setData('bed_number', e.target.value)}
+                                            disabled={!admitForm.data.ward_number || bedsLoading}
+                                            className={inp}>
+                                            {!admitForm.data.ward_number && <option value="">— Select a ward first —</option>}
+                                            {admitForm.data.ward_number && bedsLoading && <option value="">Loading beds...</option>}
+                                            {admitForm.data.ward_number && !bedsLoading && vacantBeds.length === 0 && (
+                                                <option value="">No vacant beds</option>
+                                            )}
+                                            {admitForm.data.ward_number && !bedsLoading && vacantBeds.length > 0 && (
+                                                <>
+                                                    <option value="">— Select bed —</option>
+                                                    {vacantBeds.map(n => (
+                                                        <option key={n} value={n}>Bed {n}</option>
+                                                    ))}
+                                                </>
+                                            )}
+                                        </select>
+                                        {admitForm.data.ward_number && !bedsLoading && vacantBeds.length > 0 && (
+                                            <p className="text-xs text-green-600 mt-1">{vacantBeds.length} vacant bed{vacantBeds.length !== 1 ? 's' : ''} available</p>
+                                        )}
+                                        {admitForm.data.ward_number && !bedsLoading && vacantBeds.length === 0 && (
+                                            <p className="text-xs text-red-500 mt-1">This ward has no vacant beds</p>
+                                        )}
                                     </Field>
                                     <Field label="Date on Waitlist">
                                         <input type="date" value={admitForm.data.date_on_waitlist} onChange={e => admitForm.setData('date_on_waitlist', e.target.value)} className={inp} />
