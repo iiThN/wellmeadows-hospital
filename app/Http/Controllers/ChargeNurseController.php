@@ -41,7 +41,18 @@ class ChargeNurseController extends Controller
             ->orderBy('last_name')
             ->get();
 
-        $wards   = Ward::orderBy('ward_number')->get(['ward_number', 'ward_name']);
+        $wards   = Ward::orderBy('ward_number')->get(['ward_number', 'ward_name', 'total_beds'])
+            ->map(function ($ward) {
+                $occupied = \App\Models\Inpatient::where('ward_number', $ward->ward_number)
+                    ->whereNull('actual_leave_date')
+                    ->count();
+                return [
+                    'ward_number' => $ward->ward_number,
+                    'ward_name'   => $ward->ward_name,
+                    'total_beds'  => $ward->total_beds,
+                    'vacant_beds' => max(0, $ward->total_beds - $occupied),
+                ];
+            });
         $doctors = LocalDoctor::orderBy('full_name')->get();
         $consultantNumbers = StaffPosition::where('position_title', 'Consultant')
             ->whereNull('end_date')

@@ -125,7 +125,7 @@ export default function MedicationPage({
 
                 {/* Low stock alert */}
                 {lowStock.length > 0 && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
+                    <div className="bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 rounded-lg px-4 py-3 text-sm text-red-700">
                         🚨 <strong>Reorder alert:</strong> {lowStock.map(d => d.drug_name).join(', ')} are at or below reorder level.
                     </div>
                 )}
@@ -139,10 +139,10 @@ export default function MedicationPage({
                 </div>
 
                 {/* Patient medication report */}
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <div className="px-5 py-4 border-b border-gray-200">
-                        <p className="font-medium text-gray-800">Patient Medication Report</p>
-                        <p className="text-xs text-gray-500 mt-0.5">View all medication for a specific patient</p>
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <p className="font-medium text-gray-800 dark:text-gray-100">Patient Medication Report</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">View all medication for a specific patient</p>
                     </div>
                     <div className="px-5 py-4">
                         <select
@@ -161,11 +161,11 @@ export default function MedicationPage({
                     </div>
                     {reportPatient && (
                         <>
-                            <div className="px-5 py-2 bg-blue-50 border-t border-gray-200 text-sm">
+                            <div className="px-5 py-2 bg-blue-50 dark:bg-blue-950/50 border-t border-gray-200 dark:border-gray-700 text-sm">
                                 <strong>Patient:</strong> P{reportPatientData?.patient_number} — {reportPatientData?.first_name} {reportPatientData?.last_name} · <strong>{patientRxReport.length}</strong> prescription(s)
                             </div>
                             <table className="w-full text-sm">
-                                <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                                <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase text-xs">
                                     <tr>
                                         <th className="px-4 py-3 text-left">Rx ID</th>
                                         <th className="px-4 py-3 text-left">Drug</th>
@@ -176,7 +176,7 @@ export default function MedicationPage({
                                         <th className="px-4 py-3 text-left"></th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {patientRxReport.length > 0 ? patientRxReport.map(m => {
                                         const d = drugs.find(dr => dr.drug_number === m.drug_number);
                                         return (
@@ -193,7 +193,7 @@ export default function MedicationPage({
                                             </tr>
                                         );
                                     }) : (
-                                        <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400 text-sm">No prescriptions for this patient.</td></tr>
+                                        <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400 dark:text-gray-500 text-sm">No prescriptions for this patient.</td></tr>
                                     )}
                                 </tbody>
                             </table>
@@ -202,23 +202,23 @@ export default function MedicationPage({
                 </div>
 
                 {/* Drug catalog & all prescriptions */}
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <div className="px-5 py-3 border-b border-gray-200 flex items-center justify-between">
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                         <div className="flex gap-2">
                             {(['drugs', 'prescriptions'] as const).map(t => (
                                 <button key={t} onClick={() => { setTab(t); setSearch(''); }}
-                                    className={`px-4 py-1.5 text-sm rounded-lg font-medium ${tab === t ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                                    className={`px-4 py-1.5 text-sm rounded-lg font-medium ${tab === t ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:bg-gray-200 dark:bg-gray-600'}`}>
                                     {t === 'drugs' ? 'Drug Catalog' : 'All Prescriptions'}
                                 </button>
                             ))}
                         </div>
                         <input placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)}
-                            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-48" />
+                            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-48" />
                     </div>
 
                     {tab === 'drugs' && (
                         <table className="w-full text-sm">
-                            <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                            <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase text-xs">
                                 <tr>
                                     <th className="px-4 py-3 text-left">Drug No.</th>
                                     <th className="px-4 py-3 text-left">Name</th>
@@ -229,7 +229,7 @@ export default function MedicationPage({
                                     <th className="px-4 py-3 text-left">Cost/Unit</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                 {filteredDrugs.map(d => (
                                     <tr key={d.drug_number}>
                                         <td className="px-4 py-3 font-mono text-xs">{d.drug_number}</td>
@@ -241,14 +241,14 @@ export default function MedicationPage({
                                         <td className="px-4 py-3">£{Number(d.cost_per_unit).toFixed(2)}</td>
                                     </tr>
                                 ))}
-                                {filteredDrugs.length === 0 && <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400 text-sm">No drugs found.</td></tr>}
+                                {filteredDrugs.length === 0 && <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400 dark:text-gray-500 text-sm">No drugs found.</td></tr>}
                             </tbody>
                         </table>
                     )}
 
                     {tab === 'prescriptions' && (
                         <table className="w-full text-sm">
-                            <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                            <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase text-xs">
                                 <tr>
                                     <th className="px-4 py-3 text-left">Rx ID</th>
                                     <th className="px-4 py-3 text-left">Patient</th>
@@ -260,7 +260,7 @@ export default function MedicationPage({
                                     <th className="px-4 py-3 text-left"></th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                 {filteredRx.map(m => {
                                     const p = patients.find(pt => pt.patient_number === m.patient_number);
                                     const d = drugs.find(dr => dr.drug_number === m.drug_number);
@@ -279,7 +279,7 @@ export default function MedicationPage({
                                         </tr>
                                     );
                                 })}
-                                {filteredRx.length === 0 && <tr><td colSpan={8} className="px-4 py-6 text-center text-gray-400 text-sm">No prescriptions found.</td></tr>}
+                                {filteredRx.length === 0 && <tr><td colSpan={8} className="px-4 py-6 text-center text-gray-400 dark:text-gray-500 text-sm">No prescriptions found.</td></tr>}
                             </tbody>
                         </table>
                     )}
@@ -289,10 +289,10 @@ export default function MedicationPage({
             {/* Modal */}
             {modal && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setModal(false)}>
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-5">
-                            <h3 className="text-lg font-semibold text-gray-800">Add Prescription</h3>
-                            <button onClick={() => setModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+                            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Add Prescription</h3>
+                            <button onClick={() => setModal(false)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500 text-xl">×</button>
                         </div>
                         <form onSubmit={submitRx} className="space-y-4">
                             <Field label="Patient" error={form.errors.patient_number}>
@@ -342,7 +342,7 @@ export default function MedicationPage({
                                     className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">
                                     {form.processing ? 'Saving…' : '✓ Add Prescription'}
                                 </button>
-                                <button type="button" onClick={() => setModal(false)} className="px-5 py-2 text-sm text-gray-600 hover:underline">Cancel</button>
+                                <button type="button" onClick={() => setModal(false)} className="px-5 py-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:underline">Cancel</button>
                             </div>
                         </form>
                     </div>
@@ -354,10 +354,10 @@ export default function MedicationPage({
 
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
     const colors: Record<string, string> = {
-        blue:   'bg-blue-50 text-blue-700 border-blue-100',
-        red:    'bg-red-50 text-red-700 border-red-100',
-        teal:   'bg-teal-50 text-teal-700 border-teal-100',
-        purple: 'bg-purple-50 text-purple-700 border-purple-100',
+        blue:   'bg-blue-50 dark:bg-blue-950/50 text-blue-700 border-blue-100 dark:border-blue-900',
+        red:    'bg-red-50 dark:bg-red-950/50 text-red-700 border-red-100',
+        teal:   'bg-teal-50 dark:bg-teal-950/50 text-teal-700 border-teal-100 dark:border-teal-900',
+        purple: 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 border-purple-100',
     };
     return (
         <div className={`rounded-xl p-4 border ${colors[color]}`}>
@@ -370,11 +370,11 @@ function StatCard({ label, value, color }: { label: string; value: number; color
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
     return (
         <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
             {children}
             {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
         </div>
     );
 }
 
-const inp = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
+const inp = 'w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';

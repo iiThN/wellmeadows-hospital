@@ -57,7 +57,7 @@ interface Appointment {
     consultant_number: string;
 }
 
-interface Ward { ward_number: number; ward_name: string }
+interface Ward { ward_number: number; ward_name: string; total_beds: number; vacant_beds: number }
 interface Doctor { clinic_number: string; full_name: string; telephone: string; }
 interface Consultant { staff_number: string; first_name: string; last_name: string }
 
@@ -71,7 +71,7 @@ function getStatus(p: Patient) {
     if (p.outpatient) {
         return { label: 'Out-Patient', color: 'bg-amber-100 text-amber-700' };
     }
-    return { label: 'Registered', color: 'bg-gray-100 text-gray-600' };
+    return { label: 'Registered', color: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 dark:text-gray-500' };
 }
 
 export default function PatientsPage({
@@ -89,6 +89,8 @@ export default function PatientsPage({
     const [view, setView]           = useState<'all' | 'in' | 'out'>('all');
     const [loading, setLoading]     = useState(false);
     const [step, setStep]           = useState(0);
+    const [vacantBeds, setVacantBeds]   = useState<number[]>([]);
+    const [bedsLoading, setBedsLoading] = useState(false);
 
     useEffect(() => { setModal(null); }, []);
 
@@ -122,7 +124,29 @@ export default function PatientsPage({
         appointment_time: '', examination_room: '', outcome: 'Waiting list',
     });
 
+    async function fetchVacantBeds(wardNumber: string) {
+        if (!wardNumber) { setVacantBeds([]); return; }
+        setBedsLoading(true);
+        setVacantBeds([]);
+        admitForm.setData('bed_number', '');
+        try {
+            const res = await axios.get(`/modules/ward-management/${wardNumber}/details`);
+            const { ward, patients } = res.data;
+            const occupiedBeds = new Set<number>(patients.map((p: { bed_number: number }) => p.bed_number));
+            const vacant: number[] = [];
+            for (let i = 1; i <= ward.total_beds; i++) {
+                if (!occupiedBeds.has(i)) vacant.push(i);
+            }
+            setVacantBeds(vacant);
+        } catch {
+            setVacantBeds([]);
+        } finally {
+            setBedsLoading(false);
+        }
+    }
+
     async function selectPatient(p: Patient) {
+        setSelected(p);
         setLoading(true);
         setTab('details');
         try {
@@ -140,7 +164,6 @@ export default function PatientsPage({
         const patientNumber = selected.patient_number;
 
         router.reload({
-            preserveScroll: true,
             onSuccess: async () => {
                 // Re-fetch yung selected patient pagkatapos mag-reload
                 try {
@@ -189,7 +212,7 @@ export default function PatientsPage({
     return (
         <AppLayout>
             <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold text-gray-800">Patient Management</h2>
+                <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">Patient Management</h2>
                 <button onClick={openRegister} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
                     + Register Patient
                 </button>
@@ -205,12 +228,12 @@ export default function PatientsPage({
 
             <div className="grid grid-cols-2 gap-6 items-start">
                 {/* Patient list */}
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between gap-2">
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-2">
                         <div className="flex gap-1">
                             {(['all', 'in', 'out'] as const).map(v => (
                                 <button key={v} onClick={() => setView(v)}
-                                    className={`px-3 py-1 text-xs rounded-lg font-medium ${view === v ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                                    className={`px-3 py-1 text-xs rounded-lg font-medium ${view === v ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:bg-gray-200 dark:bg-gray-600'}`}>
                                     {v === 'all' ? 'All' : v === 'in' ? 'In-Patients' : 'Out-Patients'}
                                 </button>
                             ))}
@@ -218,11 +241,11 @@ export default function PatientsPage({
                         <input
                             placeholder="Search…" value={search}
                             onChange={e => setSearch(e.target.value)}
-                            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-40"
+                            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-40"
                         />
                     </div>
                     <table className="w-full text-sm">
-                        <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                        <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase text-xs">
                             <tr>
                                 <th className="px-4 py-3 text-left">No.</th>
                                 <th className="px-4 py-3 text-left">Name</th>
@@ -230,13 +253,13 @@ export default function PatientsPage({
                                 <th className="px-4 py-3 text-left">Status</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                             {filtered.map(p => {
                                 const status = getStatus(p);
                                 return (
                                     <tr key={p.patient_number}
                                         onClick={() => selectPatient(p)}
-                                        className={`cursor-pointer hover:bg-gray-50 ${selected?.patient_number === p.patient_number ? 'bg-blue-50' : ''}`}>
+                                        className={`cursor-pointer hover:bg-gray-50 dark:bg-gray-800/50 ${selected?.patient_number === p.patient_number ? 'bg-blue-50 dark:bg-blue-950/50' : ''}`}>
                                         <td className="px-4 py-3 font-mono text-xs">P{p.patient_number}</td>
                                         <td className="px-4 py-3 font-medium">{p.first_name} {p.last_name}</td>
                                         <td className="px-4 py-3 text-xs">{p.sex}</td>
@@ -247,7 +270,7 @@ export default function PatientsPage({
                                 );
                             })}
                             {filtered.length === 0 && (
-                                <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400 text-sm">No patients found.</td></tr>
+                                <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500 text-sm">No patients found.</td></tr>
                             )}
                         </tbody>
                     </table>
@@ -255,11 +278,11 @@ export default function PatientsPage({
 
                 {/* Detail panel */}
                 {selected ? (
-                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                        <div className="px-5 py-4 border-b border-gray-200 flex items-start justify-between">
+                    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-start justify-between">
                             <div>
-                                <p className="font-semibold text-gray-800">{selected.first_name} {selected.last_name}</p>
-                                <p className="text-xs text-gray-500">P{selected.patient_number} · Registered {selected.date_registered}</p>
+                                <p className="font-semibold text-gray-800 dark:text-gray-100">{selected.first_name} {selected.last_name}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">P{selected.patient_number} · Registered {selected.date_registered}</p>
                             </div>
                             <div className="flex gap-2 items-center">
                                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatus(selected).color}`}>
@@ -270,7 +293,7 @@ export default function PatientsPage({
                         </div>
 
                         {/* Action buttons */}
-                        <div className="px-5 py-3 border-b border-gray-200 flex gap-2 flex-wrap">
+                        <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-700 flex gap-2 flex-wrap">
                             {!isAdmitted && (
                                 <button onClick={() => setModal('admit')}
                                     className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">
@@ -292,7 +315,7 @@ export default function PatientsPage({
                                 </button>
                             )}
                             <button onClick={() => setModal('outpatient')}
-                                className="px-3 py-1.5 bg-amber-500 text-white text-xs rounded-lg hover:bg-amber-600">
+                                className="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/500 text-white text-xs rounded-lg hover:bg-amber-600">
                                 + Out-Patient
                             </button>
                             <button onClick={() => setModal('appointment')}
@@ -302,17 +325,19 @@ export default function PatientsPage({
                         </div>
 
                         {/* Tabs */}
-                        <div className="flex border-b border-gray-200">
+                        <div className="flex border-b border-gray-200 dark:border-gray-700">
                             {tabs.map(t => (
                                 <button key={t.id} onClick={() => setTab(t.id)}
-                                    className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                                    className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300'}`}>
                                     {t.label}
                                 </button>
                             ))}
                         </div>
 
                         {loading ? (
-                            <div className="p-8 text-center text-gray-400 text-sm">Loading…</div>
+                            <div className="p-6 space-y-3">
+                                {[1,2,3,4].map(i => <div key={i} className="h-4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" style={{width: `${70+i*5}%`}} />)}
+                            </div>
                         ) : (
                             <>
                                 {tab === 'details' && (
@@ -323,10 +348,10 @@ export default function PatientsPage({
                                         <Detail label="Telephone" value={selected.telephone} />
                                         <div className="col-span-2"><Detail label="Address" value={selected.address} /></div>
                                         {selected.local_doctor && (
-                                            <div className="col-span-2 pt-3 border-t border-gray-100">
-                                                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Local Doctor</p>
-                                                <p className="font-medium text-gray-800">{selected.local_doctor.full_name}</p>
-                                                <p className="text-xs text-gray-500">{selected.local_doctor?.telephone ?? '—'}</p>
+                                            <div className="col-span-2 pt-3 border-t border-gray-100 dark:border-gray-700">
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Local Doctor</p>
+                                                <p className="font-medium text-gray-800 dark:text-gray-100">{selected.local_doctor.full_name}</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{selected.local_doctor?.telephone ?? '—'}</p>
                                             </div>
                                         )}
                                     </div>
@@ -337,28 +362,28 @@ export default function PatientsPage({
 
                                         {/* Current status */}
                                         {selected.inpatient && !selected.inpatient.actual_leave_date ? (
-                                            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm bg-teal-50 rounded-lg p-4 border border-teal-100">
+                                            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm bg-teal-50 dark:bg-teal-950/50 rounded-lg p-4 border border-teal-100 dark:border-teal-900">
                                                 <Detail label="Ward" value={`Ward ${selected.inpatient.ward_number}`} />
                                                 <Detail label="Bed" value={String(selected.inpatient.bed_number)} />
                                                 <Detail label="Date Placed" value={selected.inpatient.date_placed} />
                                                 <Detail label="Expected Leave" value={selected.inpatient.expected_leave_date ?? '—'} />
                                             </div>
                                         ) : selected.outpatient ? (
-                                            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm bg-amber-50 rounded-lg p-4 border border-amber-100">
+                                            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm bg-amber-50 dark:bg-amber-950/50 rounded-lg p-4 border border-amber-100 dark:border-amber-900">
                                                 <Detail label="Status" value="Out-Patient" />
                                                 <Detail label="Last Appointment" value={selected.outpatient.appointment_date} />
                                                 <Detail label="Time" value={selected.outpatient.appointment_time} />
                                             </div>
                                         ) : (
-                                            <p className="text-gray-400 text-sm py-3">No active record.</p>
+                                            <p className="text-gray-400 dark:text-gray-500 text-sm py-3">No active record.</p>
                                         )}
 
                                         {/* Admission history */}
                                         {selected.inpatient_history?.length > 0 && (
                                             <div>
-                                                <p className="text-xs text-gray-500 uppercase tracking-wide mb-2 font-semibold">Admission History</p>
-                                                <table className="w-full text-sm border border-gray-100 rounded-lg overflow-hidden">
-                                                    <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2 font-semibold">Admission History</p>
+                                                <table className="w-full text-sm border border-gray-100 dark:border-gray-700 rounded-lg overflow-hidden">
+                                                    <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 dark:text-gray-500 text-xs uppercase">
                                                         <tr>
                                                             <th className="px-3 py-2 text-left">Ward</th>
                                                             <th className="px-3 py-2 text-left">Bed</th>
@@ -366,9 +391,9 @@ export default function PatientsPage({
                                                             <th className="px-3 py-2 text-left">Discharged</th>
                                                         </tr>
                                                     </thead>
-                                                    <tbody className="divide-y divide-gray-100">
+                                                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                                         {selected.inpatient_history.map((ip, i) => (
-                                                            <tr key={i} className={ip.actual_leave_date ? '' : 'bg-teal-50 font-medium'}>
+                                                            <tr key={i} className={ip.actual_leave_date ? '' : 'bg-teal-50 dark:bg-teal-950/50 font-medium'}>
                                                                 <td className="px-3 py-2">Ward {ip.ward_number}</td>
                                                                 <td className="px-3 py-2">{ip.bed_number}</td>
                                                                 <td className="px-3 py-2">{ip.date_placed}</td>
@@ -385,19 +410,19 @@ export default function PatientsPage({
                                         {/* Outpatient visit history */}
                                         {selected.outpatient_history?.length > 0 && (
                                             <div>
-                                                <p className="text-xs text-gray-500 uppercase tracking-wide mb-2 font-semibold">Out-Patient Visit History</p>
-                                                <table className="w-full text-sm border border-gray-100 rounded-lg overflow-hidden">
-                                                    <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-2 font-semibold">Out-Patient Visit History</p>
+                                                <table className="w-full text-sm border border-gray-100 dark:border-gray-700 rounded-lg overflow-hidden">
+                                                    <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 dark:text-gray-500 text-xs uppercase">
                                                         <tr>
                                                             <th className="px-3 py-2 text-left">#</th>
                                                             <th className="px-3 py-2 text-left">Date</th>
                                                             <th className="px-3 py-2 text-left">Time</th>
                                                         </tr>
                                                     </thead>
-                                                    <tbody className="divide-y divide-gray-100">
+                                                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                                         {selected.outpatient_history.map((op, i) => (
                                                             <tr key={i}>
-                                                                <td className="px-3 py-2 text-gray-400 text-xs">{i + 1}</td>
+                                                                <td className="px-3 py-2 text-gray-400 dark:text-gray-500 text-xs">{i + 1}</td>
                                                                 <td className="px-3 py-2">{op.appointment_date}</td>
                                                                 <td className="px-3 py-2">{op.appointment_time}</td>
                                                             </tr>
@@ -412,28 +437,28 @@ export default function PatientsPage({
 
                                 {tab === 'nextofkin' && (
                                     <table className="w-full text-sm">
-                                        <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                                        <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase text-xs">
                                             <tr>
                                                 <th className="px-4 py-3 text-left">Name</th>
                                                 <th className="px-4 py-3 text-left">Relationship</th>
                                                 <th className="px-4 py-3 text-left">Telephone</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-100">
+                                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                             {selected.next_of_kin?.length > 0 ? selected.next_of_kin.map(k => (
                                                 <tr key={k.id}>
                                                     <td className="px-4 py-3 font-medium">{k.full_name}</td>
                                                     <td className="px-4 py-3">{k.relationship}</td>
                                                     <td className="px-4 py-3 font-mono text-xs">{k.telephone}</td>
                                                 </tr>
-                                            )) : <tr><td colSpan={3} className="px-4 py-8 text-center text-gray-400 text-sm">No next of kin recorded.</td></tr>}
+                                            )) : <tr><td colSpan={3} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500 text-sm">No next of kin recorded.</td></tr>}
                                         </tbody>
                                     </table>
                                 )}
 
                                 {tab === 'appointments' && (
                                     <table className="w-full text-sm">
-                                        <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                                        <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase text-xs">
                                             <tr>
                                                 <th className="px-4 py-3 text-left">No.</th>
                                                 <th className="px-4 py-3 text-left">Date</th>
@@ -441,7 +466,7 @@ export default function PatientsPage({
                                                 <th className="px-4 py-3 text-left">Outcome</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-100">
+                                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                             {selected.appointments?.length > 0 ? selected.appointments.map(a => (
                                                 <tr key={a.appointment_number}>
                                                     <td className="px-4 py-3 font-mono text-xs">{a.appointment_number}</td>
@@ -453,7 +478,7 @@ export default function PatientsPage({
                                                         </span>
                                                     </td>
                                                 </tr>
-                                            )) : <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400 text-sm">No appointments recorded.</td></tr>}
+                                            )) : <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500 text-sm">No appointments recorded.</td></tr>}
                                         </tbody>
                                     </table>
                                 )}
@@ -461,8 +486,8 @@ export default function PatientsPage({
                         )}
                     </div>
                 ) : (
-                    <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center h-64">
-                        <p className="text-gray-400 text-sm">Select a patient to view their record.</p>
+                    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-center h-64">
+                        <p className="text-gray-400 dark:text-gray-500 text-sm">Select a patient to view their record.</p>
                     </div>
                 )}
             </div>
@@ -470,25 +495,25 @@ export default function PatientsPage({
             {/* ── MODALS ── */}
             {modal && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setModal(null)}>
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-5">
-                            <h3 className="text-lg font-semibold text-gray-800">
+                            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
                                 {modal === 'register'    ? 'Register New Patient' :
                                  modal === 'edit'        ? 'Edit Patient' :
                                  modal === 'admit'       ? `Admit — P${selected?.patient_number}` :
                                  modal === 'outpatient'  ? `Out-Patient — P${selected?.patient_number}` :
                                  'New Appointment'}
                             </h3>
-                            <button onClick={() => setModal(null)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+                            <button onClick={() => setModal(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500 text-xl">×</button>
                         </div>
 
                         {/* REGISTER */}
                         {modal === 'register' && (
                             <>
                                 {/* Step indicator */}
-                                <div className="flex mb-5 border-b border-gray-200">
+                                <div className="flex mb-5 border-b border-gray-200 dark:border-gray-700">
                                     {['Patient Info', 'Next of Kin', 'Local Doctor'].map((s, i) => (
-                                        <div key={s} className={`flex-1 text-center pb-2 text-xs font-medium border-b-2 -mb-px ${step === i ? 'border-blue-600 text-blue-600' : step > i ? 'border-green-500 text-green-600' : 'border-transparent text-gray-400'}`}>
+                                        <div key={s} className={`flex-1 text-center pb-2 text-xs font-medium border-b-2 -mb-px ${step === i ? 'border-blue-600 text-blue-600' : step > i ? 'border-green-500 text-green-600' : 'border-transparent text-gray-400 dark:text-gray-500'}`}>
                                             {step > i ? '✓ ' : ''}{s}
                                         </div>
                                     ))}
@@ -535,7 +560,7 @@ export default function PatientsPage({
                                 {step === 1 && (
                                     <div className="space-y-3">
                                         {(registerForm.data.kin as any[]).map((k, i) => (
-                                            <div key={i} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                            <div key={i} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <Field label="Full Name">
                                                         <input value={k.full_name} onChange={e => { const kin = [...registerForm.data.kin as any[]]; kin[i].full_name = e.target.value; registerForm.setData('kin', kin); }} className={inp} />
@@ -573,13 +598,13 @@ export default function PatientsPage({
                                                 <input value={registerForm.data.doctor_address} onChange={e => registerForm.setData('doctor_address', e.target.value)} className={inp} />
                                             </Field>
                                         </div>
-                                        <p className="col-span-2 text-xs text-gray-400">Local doctor is optional — leave blank to skip.</p>
+                                        <p className="col-span-2 text-xs text-gray-400 dark:text-gray-500">Local doctor is optional — leave blank to skip.</p>
                                     </div>
                                 )}
 
-                                <div className="flex justify-between mt-6 pt-4 border-t border-gray-200">
+                                <div className="flex justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                                     <button type="button" onClick={step === 0 ? () => setModal(null) : () => setStep(s => s - 1)}
-                                        className="px-4 py-2 text-sm text-gray-600 hover:underline">
+                                        className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:underline">
                                         {step === 0 ? 'Cancel' : '← Back'}
                                     </button>
                                     {step < 2 ? (
@@ -610,9 +635,9 @@ export default function PatientsPage({
                                     <Field label="Telephone"><input value={editForm.data.telephone} onChange={e => editForm.setData('telephone', e.target.value)} className={inp} /></Field>
                                     <div className="col-span-2"><Field label="Address"><input value={editForm.data.address} onChange={e => editForm.setData('address', e.target.value)} className={inp} /></Field></div>
                                 </div>
-                                <div className="flex gap-3 pt-2 border-t border-gray-200">
+                                <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
                                     <button type="submit" disabled={editForm.processing} className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">{editForm.processing ? 'Saving…' : 'Save Changes'}</button>
-                                    <button type="button" onClick={() => setModal(null)} className="px-5 py-2 text-sm text-gray-600 hover:underline">Cancel</button>
+                                    <button type="button" onClick={() => setModal(null)} className="px-5 py-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:underline">Cancel</button>
                                 </div>
                             </form>
                         )}
@@ -622,13 +647,47 @@ export default function PatientsPage({
                             <form onSubmit={e => { e.preventDefault(); admitForm.post(`/modules/patient-management/${selected!.patient_number}/admit`, { preserveScroll: true, onSuccess: () => { setModal(null); refreshSelected(); } }); }} className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <Field label="Ward" error={admitForm.errors.ward_number}>
-                                        <select value={admitForm.data.ward_number} onChange={e => admitForm.setData('ward_number', e.target.value)} className={inp}>
+                                        <select
+                                            value={admitForm.data.ward_number}
+                                            onChange={e => {
+                                                admitForm.setData('ward_number', e.target.value);
+                                                fetchVacantBeds(e.target.value);
+                                            }}
+                                            className={inp}>
                                             <option value="">— Select ward —</option>
-                                            {wards.map(w => <option key={w.ward_number} value={w.ward_number}>Ward {w.ward_number} — {w.ward_name}</option>)}
+                                            {wards.map(w => (
+                                                <option key={w.ward_number} value={w.ward_number}>
+                                                    Ward {w.ward_number} — {w.ward_name} ({w.vacant_beds} vacant)
+                                                </option>
+                                            ))}
                                         </select>
                                     </Field>
                                     <Field label="Bed Number" error={admitForm.errors.bed_number}>
-                                        <input type="number" value={admitForm.data.bed_number} onChange={e => admitForm.setData('bed_number', e.target.value)} className={inp} placeholder="e.g. 84" />
+                                        <select
+                                            value={admitForm.data.bed_number}
+                                            onChange={e => admitForm.setData('bed_number', e.target.value)}
+                                            disabled={!admitForm.data.ward_number || bedsLoading}
+                                            className={inp}>
+                                            {!admitForm.data.ward_number && <option value="">— Select a ward first —</option>}
+                                            {admitForm.data.ward_number && bedsLoading && <option value="">Loading beds...</option>}
+                                            {admitForm.data.ward_number && !bedsLoading && vacantBeds.length === 0 && (
+                                                <option value="">No vacant beds</option>
+                                            )}
+                                            {admitForm.data.ward_number && !bedsLoading && vacantBeds.length > 0 && (
+                                                <>
+                                                    <option value="">— Select bed —</option>
+                                                    {vacantBeds.map(n => (
+                                                        <option key={n} value={n}>Bed {n}</option>
+                                                    ))}
+                                                </>
+                                            )}
+                                        </select>
+                                        {admitForm.data.ward_number && !bedsLoading && vacantBeds.length > 0 && (
+                                            <p className="text-xs text-green-600 mt-1">{vacantBeds.length} vacant bed{vacantBeds.length !== 1 ? 's' : ''} available</p>
+                                        )}
+                                        {admitForm.data.ward_number && !bedsLoading && vacantBeds.length === 0 && (
+                                            <p className="text-xs text-red-500 mt-1">This ward has no vacant beds</p>
+                                        )}
                                     </Field>
                                     <Field label="Date on Waitlist">
                                         <input type="date" value={admitForm.data.date_on_waitlist} onChange={e => admitForm.setData('date_on_waitlist', e.target.value)} className={inp} />
@@ -643,9 +702,9 @@ export default function PatientsPage({
                                         <input type="number" value={admitForm.data.expected_stay_days} onChange={e => admitForm.setData('expected_stay_days', e.target.value)} className={inp} placeholder="e.g. 5" />
                                     </Field>
                                 </div>
-                                <div className="flex gap-3 pt-2 border-t border-gray-200">
+                                <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
                                     <button type="submit" disabled={admitForm.processing} className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">{admitForm.processing ? 'Admitting…' : '✓ Admit Patient'}</button>
-                                    <button type="button" onClick={() => setModal(null)} className="px-5 py-2 text-sm text-gray-600 hover:underline">Cancel</button>
+                                    <button type="button" onClick={() => setModal(null)} className="px-5 py-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:underline">Cancel</button>
                                 </div>
                             </form>
                         )}
@@ -659,9 +718,9 @@ export default function PatientsPage({
                                 <Field label="Appointment Time" error={outpatientForm.errors.appointment_time}>
                                     <input type="time" value={outpatientForm.data.appointment_time} onChange={e => outpatientForm.setData('appointment_time', e.target.value)} className={inp} />
                                 </Field>
-                                <div className="flex gap-3 pt-2 border-t border-gray-200">
+                                <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
                                     <button type="submit" disabled={outpatientForm.processing} className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">{outpatientForm.processing ? 'Saving…' : '✓ Set Appointment'}</button>
-                                    <button type="button" onClick={() => setModal(null)} className="px-5 py-2 text-sm text-gray-600 hover:underline">Cancel</button>
+                                    <button type="button" onClick={() => setModal(null)} className="px-5 py-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:underline">Cancel</button>
                                 </div>
                             </form>
                         )}
@@ -695,9 +754,9 @@ export default function PatientsPage({
                                         </select>
                                     </Field>
                                 </div>
-                                <div className="flex gap-3 pt-2 border-t border-gray-200">
+                                <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
                                     <button type="submit" disabled={appointmentForm.processing} className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">{appointmentForm.processing ? 'Saving…' : '✓ Record Appointment'}</button>
-                                    <button type="button" onClick={() => setModal(null)} className="px-5 py-2 text-sm text-gray-600 hover:underline">Cancel</button>
+                                    <button type="button" onClick={() => setModal(null)} className="px-5 py-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:underline">Cancel</button>
                                 </div>
                             </form>
                         )}
@@ -710,10 +769,10 @@ export default function PatientsPage({
 
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
     const colors: Record<string, string> = {
-        blue:   'bg-blue-50 text-blue-700 border-blue-100',
-        teal:   'bg-teal-50 text-teal-700 border-teal-100',
-        amber:  'bg-amber-50 text-amber-700 border-amber-100',
-        purple: 'bg-purple-50 text-purple-700 border-purple-100',
+        blue:   'bg-blue-50 dark:bg-blue-950/50 text-blue-700 border-blue-100 dark:border-blue-900',
+        teal:   'bg-teal-50 dark:bg-teal-950/50 text-teal-700 border-teal-100 dark:border-teal-900',
+        amber:  'bg-amber-50 dark:bg-amber-950/50 text-amber-700 border-amber-100 dark:border-amber-900',
+        purple: 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 border-purple-100',
     };
     return (
         <div className={`rounded-xl p-4 border ${colors[color]}`}>
@@ -726,8 +785,8 @@ function StatCard({ label, value, color }: { label: string; value: number; color
 function Detail({ label, value }: { label: string; value: string }) {
     return (
         <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
-            <p className="text-gray-800 font-medium mt-0.5">{value || '—'}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wide">{label}</p>
+            <p className="text-gray-800 dark:text-gray-100 font-medium mt-0.5">{value || '—'}</p>
         </div>
     );
 }
@@ -735,11 +794,11 @@ function Detail({ label, value }: { label: string; value: string }) {
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
     return (
         <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
             {children}
             {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
         </div>
     );
 }
 
-const inp = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
+const inp = 'w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
