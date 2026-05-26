@@ -214,5 +214,6 @@ Railway — https://railway.app
 1. Module 4 (Appointment & Treatment) and Module 5 (Billing & Reporting) are not yet implemented in this version.
 2. There is no real-time notification system — users must manually refresh to see updates.
 3. The system does not currently support password reset via email in the production environment.
+4. Due to the lack of members in the development team, the developers focused primarily on their assigned modules. As a result, the dashboard currently does not contain a large amount of staff-related data and functionality.
 
 
