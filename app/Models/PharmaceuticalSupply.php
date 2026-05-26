@@ -5,7 +5,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class PharmaceuticalSupply extends Model
 {
-    protected $table = 'pharmaceuticalsupply';
+    protected $table = 'pharmaceuticalsupplies';
     protected $primaryKey = 'drug_number';
     public $incrementing = false;
     protected $keyType = 'string';
