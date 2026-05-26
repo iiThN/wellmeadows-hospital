@@ -25,6 +25,12 @@ interface Patient {
     last_name: string;
 }
 
+interface Staff {
+    staff_number: string;
+    first_name: string;
+    last_name: string;
+}
+
 interface Medication {
     medication_id: number;
     patient_number: string;
@@ -37,11 +43,12 @@ interface Medication {
 }
 
 export default function MedicationPage({
-    medications, drugs, patients
+    medications, drugs, patients, staffList
 }: {
     medications: Medication[];
     drugs: Drug[];
     patients: Patient[];
+    staffList: Staff[];
 }) {
     const [tab, setTab]           = useState<'drugs' | 'prescriptions'>('drugs');
     const [modal, setModal]       = useState(false);
@@ -320,9 +327,16 @@ export default function MedicationPage({
                                     <input type="date" value={form.data.finish_date} onChange={e => form.setData('finish_date', e.target.value)} className={inp} />
                                 </Field>
                             </div>
-                            <Field label="Prescribed By">
-                                <input value={form.data.prescribed_by} onChange={e => form.setData('prescribed_by', e.target.value)} className={inp} placeholder="Staff number or name" />
-                            </Field>
+                                <Field label="Prescribed By" error={form.errors.prescribed_by}>
+                                    <select value={form.data.prescribed_by} onChange={e => form.setData('prescribed_by', e.target.value)} className={inp}>
+                                        <option value="">— Select staff —</option>
+                                        {staffList.map(s => (
+                                            <option key={s.staff_number} value={s.staff_number}>
+                                                {s.first_name} {s.last_name} ({s.staff_number})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </Field>
                             <div className="flex gap-3 pt-2 border-t border-gray-200">
                                 <button type="submit" disabled={form.processing}
                                     className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">

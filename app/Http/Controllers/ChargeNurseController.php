@@ -261,19 +261,21 @@ class ChargeNurseController extends Controller
         $medications = PatientMedication::orderBy('medication_id')->get();
         $drugs        = PharmaceuticalSupply::orderBy('drug_name')->get();
         $patients     = Patient::orderBy('last_name')->get(['patient_number', 'first_name', 'last_name']);
+        $staffList = Staff::orderBy('last_name')->get(['staff_number', 'first_name', 'last_name']);
 
         return Inertia::render('modules/medication/index', [
             'medications' => $medications,
             'drugs'       => $drugs,
             'patients'    => $patients,
+            'staffList'   => $staffList,
         ]);
     }
 
     public function medicationStore(Request $request)
     {
         $validated = $request->validate([
-            'patient_number'  => 'required|string|exists:patient,patient_number',
-            'drug_number'     => 'required|string|exists:pharmaceuticalsupply,drug_number',
+            'patient_number'  => 'required|string|exists:patients,patient_number',
+            'drug_number'     => 'required|string|exists:pharmaceuticalsupplies,drug_number',
             'units_per_day'   => 'required|integer|min:1',
             'method_of_admin' => 'required|string',
             'start_date'      => 'required|date',
